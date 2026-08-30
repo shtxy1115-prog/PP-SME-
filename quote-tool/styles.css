@@ -1,0 +1,121 @@
+:root {
+  color-scheme: light;
+  --ink: #17233d;
+  --muted: #68738a;
+  --line: #dce3ef;
+  --surface: #ffffff;
+  --soft: #f5f8fc;
+  --blue: #1e4c91;
+  --blue-soft: #e9f1ff;
+  --amber: #9a5d00;
+  --amber-soft: #fff4db;
+  --red: #a62b36;
+  --red-soft: #fff0f1;
+  --green: #20684b;
+  --green-soft: #eaf7f0;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--ink); background: #eef3f9; line-height: 1.45; }
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+.site-header { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; padding: 32px max(24px, calc((100% - 1440px) / 2)); color: #fff; background: linear-gradient(135deg, #173c79, #1e4c91 62%, #2e6eb3); }
+.site-header h1 { margin: 4px 0 8px; font-size: clamp(25px, 3vw, 38px); letter-spacing: -.03em; }
+.subtitle { margin: 0; color: #dbe8ff; font-size: 14px; }
+.eyebrow { margin: 0; color: #6b7b95; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.site-header .eyebrow { color: #b9d2ff; }
+.header-actions { display: flex; gap: 10px; flex-shrink: 0; }
+main { width: min(1440px, calc(100% - 40px)); margin: 22px auto 50px; display: grid; gap: 18px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; box-shadow: 0 8px 26px rgba(24, 48, 86, .06); }
+.section-heading, .benefits-heading { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 18px; }
+.section-heading h2, .benefits-heading h2 { margin: 3px 0 0; font-size: 20px; }
+.hint, small { color: var(--muted); font-size: 13px; }
+.tag, .status-chip { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 700; }
+.tag { color: var(--blue); background: var(--blue-soft); }
+.form-grid { display: grid; gap: 14px; }
+.company-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+label { display: grid; gap: 6px; color: #3e4a62; font-size: 13px; font-weight: 700; }
+input, select { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid #cbd5e5; border-radius: 8px; color: var(--ink); background: #fff; }
+input:focus, select:focus { outline: 3px solid rgba(52, 117, 192, .16); border-color: #4a82c2; }
+input:disabled, select:disabled { color: #8e98aa; background: #f3f5f8; cursor: not-allowed; }
+.payment-condition { display: flex; grid-template-columns: auto 1fr; align-items: flex-start; gap: 10px; margin-top: 18px; padding: 13px 15px; border: 1px solid #d9e5f6; border-radius: 10px; background: #f7faff; }
+.payment-condition input { width: 17px; min-height: 17px; margin-top: 3px; }
+.payment-condition span { display: grid; gap: 2px; }
+.quote-mode { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin: 0 0 20px; padding: 12px 15px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
+.quote-mode legend { padding: 0 5px; color: var(--blue); font-size: 13px; font-weight: 800; }
+.quote-mode label { display: flex; grid-template-columns: auto 1fr; align-items: center; gap: 7px; font-weight: 700; }
+.quote-mode input { width: 16px; min-height: 16px; }
+.quote-mode small { flex-basis: 100%; }
+.medical-plan-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.medical-plan { display: flex; grid-template-columns: auto 1fr; align-items: flex-start; gap: 9px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; transition: border .15s, background .15s; }
+.medical-plan:has(input:checked) { border-color: #5889c6; background: var(--blue-soft); }
+.medical-plan input { width: 17px; min-height: 17px; margin-top: 2px; }
+.medical-plan span { display: grid; gap: 3px; }
+.medical-plan strong { font-size: 13px; }
+.medical-plan small { white-space: pre-line; }
+.benefits-heading { margin: 25px 0 12px; }
+.benefit-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.option-panel { padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfe; }
+.option-panel h3 { margin: 0 0 12px; font-size: 15px; }
+.option-panel .option-row { margin-top: 10px; }
+.option-price { display: block; color: var(--muted); font-size: 11px; font-weight: 500; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+table { width: 100%; min-width: 1280px; border-collapse: collapse; }
+th, td { padding: 9px 8px; border-bottom: 1px solid #e8edf4; text-align: left; vertical-align: top; font-size: 12px; }
+th { position: sticky; top: 0; z-index: 1; color: #31415f; background: #f3f6fb; font-weight: 800; white-space: nowrap; }
+td input, td select { min-width: 104px; min-height: 34px; padding: 6px 7px; font-size: 12px; }
+td:nth-child(1) input { min-width: 140px; }
+td:nth-child(3) input, td:nth-child(4) input { min-width: 125px; }
+td:nth-child(9) input { min-width: 128px; }
+.row-auto { background: #fff; }
+.row-manual { background: #fffaf0; }
+.row-pending { background: #fffaf0; }
+.row-ineligible { background: #fff4f4; }
+.status-note { margin-top: 12px; color: var(--muted); font-size: 12px; line-height: 2.4; }
+.status-chip { margin-right: 4px; padding: 3px 7px; }
+.status-chip.auto { color: var(--green); background: var(--green-soft); }
+.status-chip.manual, .status-chip.pending { color: var(--amber); background: var(--amber-soft); }
+.status-chip.ineligible { color: var(--red); background: var(--red-soft); }
+.bulk-row { display: flex; gap: 12px; margin-top: 15px; }
+.primary, .secondary, .text-button, .remove-button { border: 0; border-radius: 8px; }
+.primary { padding: 10px 16px; color: #fff; background: #2f79c7; font-weight: 800; box-shadow: 0 4px 10px rgba(15, 67, 128, .2); }
+.primary:hover { background: #2568b0; }
+.secondary { padding: 9px 13px; color: var(--blue); border: 1px solid #b8cbe5; background: #fff; font-weight: 700; }
+.secondary:hover { background: var(--blue-soft); }
+.danger-button { color: #fff; border-color: rgba(255,255,255,.55); background: rgba(144, 29, 47, .22); }
+.text-button { padding: 5px 0; color: var(--blue); background: transparent; font-weight: 700; }
+.text-button.danger { color: var(--red); }
+.remove-button { width: 28px; height: 28px; color: var(--red); background: var(--red-soft); font-size: 19px; line-height: 1; }
+.results-card { background: linear-gradient(180deg, #fff, #f8fbff); }
+.results-card .section-heading strong { color: var(--blue); font-size: 28px; }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.summary-card { padding: 16px; border: 1px solid #d7e3f3; border-radius: 10px; background: #fff; }
+.summary-card h3 { margin: 0 0 4px; font-size: 15px; white-space: pre-line; }
+.summary-card .total { margin: 9px 0; color: var(--blue); font-size: 25px; font-weight: 850; }
+.summary-card dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 0; color: var(--muted); font-size: 12px; }
+.summary-card dd { margin: 0; color: var(--ink); font-weight: 700; }
+.summary-card .review { margin: 12px 0 0; padding: 8px; color: var(--amber); border-radius: 7px; background: var(--amber-soft); font-size: 12px; }
+.validation { display: grid; gap: 8px; margin-top: 15px; }
+.validation-empty { padding: 12px; color: var(--green); border-radius: 9px; background: var(--green-soft); font-weight: 700; }
+.validation-group { padding: 12px 14px; border-radius: 9px; }
+.validation-group.error { color: var(--red); background: var(--red-soft); }
+.validation-group.manual { color: var(--amber); background: var(--amber-soft); }
+.validation-group.warning { color: #315f9d; background: var(--blue-soft); }
+.validation-group h3 { margin: 0 0 5px; font-size: 13px; }
+.validation-group ul { margin: 0; padding-left: 19px; font-size: 12px; }
+
+@media (max-width: 1100px) {
+  .medical-plan-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .benefit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .company-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .site-header { flex-direction: column; padding: 24px 18px; }
+  .header-actions { width: 100%; }
+  .header-actions button { flex: 1; }
+  main { width: calc(100% - 20px); margin-top: 10px; }
+  .card { padding: 17px; }
+  .section-heading, .benefits-heading { align-items: flex-start; flex-direction: column; }
+  .company-grid, .medical-plan-grid, .benefit-grid { grid-template-columns: 1fr; }
+}
