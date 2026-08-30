@@ -285,7 +285,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   const PLAN_GROUP_CODES = Object.freeze({
     P1: ["P101", "P102", "P103"],
     P2: ["P201", "P202", "P203"],
-    P3: ["P3WWE", "P3WW"],
+    P3: ["P3WWE"],
     P4: ["P4WWE", "P4WW"],
   });
 
@@ -297,7 +297,6 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     { code: "P202", group: "P2", name: "大中华计划", option: "选项二", area: "中国大陆、港澳台", region: "GREATER_CHINA", rateColumn: "P2O2", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P2O2" } },
     { code: "P203", group: "P2", name: "大中华计划", option: "选项三", area: "中国大陆、港澳台", region: "GREATER_CHINA", rateColumn: "P2O3", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P2O3" } },
     { code: "P3WWE", group: "P3", name: "全球除美计划", option: "", area: "全球除美国", region: "WORLDWIDE_EXCLUDING_US", rateColumn: "P3WWE", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P3WWE" } },
-    { code: "P3WW", group: "P3", name: "全球计划", option: "", area: "全球", region: "WORLDWIDE", rateColumn: null, outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: null, status: "NEEDS_CONFIRMATION", note: "原始费率表没有 P3WW 列；不得复用其他计划费率" } },
     { code: "P4WWE", group: "P4", name: "全球计划", option: "", area: "全球除美国", region: "WORLDWIDE_EXCLUDING_US", rateColumn: "P4WWE", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P4WWE" } },
     { code: "P4WW", group: "P4", name: "全球计划", option: "", area: "全球", region: "WORLDWIDE", rateColumn: "P4WW", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P4WW" } },
   ]);
@@ -335,7 +334,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
    */
   const BENEFIT_DATA = Object.freeze([
     makeBenefit({ benefitId: "ANNUAL_MAXIMUM", section: "core", cnName: "年度最高保额", enName: "Overall Annual Maximum per Insured Person", cnDescription: "所有责任年度赔付限额", enDescription: "All benefits share this annual maximum", baseValues: { P1: "8,000,000元\nCNY 8,000,000", P2: "16,000,000元\nCNY 16,000,000", P3: "16,000,000元\nCNY 16,000,000", P4: "20,000,000元\nCNY 20,000,000" }, sourceRow: 5 }),
-    makeBenefit({ benefitId: "COVERAGE_AREA", section: "core", cnName: "保障区域", enName: "Coverage Area", cnDescription: "承保区域按计划定义；全球计划在美国适用网络医疗规则", enDescription: "Coverage area follows the plan; worldwide plans use the US network rule", baseValues: { P1: "中国大陆\nMainland China", P2: "中国大陆和港澳台\nMainland China, Hong Kong, Macao and Taiwan", P3: "全球除美国\nWorldwide excluding US.", P4: "全球\nWorldwide" }, sourceRow: 6 }),
+    makeBenefit({ benefitId: "COVERAGE_AREA", section: "core", cnName: "保障区域", enName: "Coverage Area", cnDescription: "承保区域按计划定义；全球计划在美国适用网络医疗规则", enDescription: "Coverage area follows the plan; worldwide plans use the US network rule", baseValues: { P1: "中国大陆\nMainland China", P2: "中国大陆和港澳台\nMainland China, Hong Kong, Macao and Taiwan", P3: "全球除美国\nWorldwide excluding US.", P4: "全球\nWorldwide" }, planOverrides: { P4WWE: "全球除美国\nWorldwide excluding US." }, sourceRow: 6 }),
     makeBenefit({ benefitId: "EMERGENCY_TREATMENT", section: "core", cnName: "紧急医疗", enName: "Emergency Treatment", cnDescription: "保障区域以外发生的紧急医疗，在责任范围内提供保障", enDescription: "Emergency treatment outside the coverage area is covered within the insured benefits", baseValues: { P1: "涵盖\nCovered", P2: "涵盖\nCovered", P3: "涵盖\nCovered", P4: "——" }, sourceRow: 7 }),
     makeBenefit({ benefitId: "DIRECT_BILLING", section: "core", cnName: "直付服务", enName: "Direct Billing Service", baseValues: { P1: "涵盖\nCovered", P2: "涵盖\nCovered", P3: "涵盖\nCovered", P4: "涵盖\nCovered" }, sourceRow: 8 }),
     makeBenefit({ benefitId: "PUBLIC_HOSPITAL", section: "hospital", cnName: "公立医院普通部、VIP或特需部", enName: "Public Hospitals general ward, VIP or international department", baseValues: { P1: "0", P2: "0", P3: "0", P4: "0" }, sourceRow: 10 }),
@@ -535,9 +534,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     if (explicitStatus === QUOTE_STATUSES.PENDING_UW) return { status: QUOTE_STATUSES.PENDING_UW, premium: 0, reason: "USER_MARKED_PENDING", rateSource: null };
     if (age === null) return { status: QUOTE_STATUSES.PENDING_UW, premium: 0, reason: "MISSING_AGE", rateSource: null };
     const automaticRate = rateFor(age, plan);
-    if (automaticRate === null) {
-      return { status: QUOTE_STATUSES.PENDING_UW, premium: 0, reason: plan.rateColumn ? "AGE_OUT_OF_AUTOMATIC_RANGE" : "RATE_COLUMN_MISSING", rateSource: plan.rateColumn || null };
-    }
+    if (automaticRate === null) return { status: QUOTE_STATUSES.PENDING_UW, premium: 0, reason: "AGE_OUT_OF_AUTOMATIC_RANGE", rateSource: plan.rateColumn };
     return { status: QUOTE_STATUSES.AUTO_QUOTABLE, premium: automaticRate, reason: "RATE_TABLE", rateSource: plan.rateColumn };
   }
 
@@ -673,7 +670,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         const key = `${person.id || person.name || "person"}:${variant.id || variant.planCode}`;
         if (medical.status === QUOTE_STATUSES.INELIGIBLE) {
           addMessage(messages, VALIDATION_LEVELS.ERROR, "INELIGIBLE_MEMBER", `${person.name || person.id || "人员"} 不符合 ${plan.code} 报价条件 / member is ineligible for this Plan.`, { personId: person.id, variantId: variant.id });
-        } else if (medical.status === QUOTE_STATUSES.PENDING_UW && ["AGE_OUT_OF_AUTOMATIC_RANGE", "RATE_COLUMN_MISSING", "MANUAL_RATE_MISSING", "USER_MARKED_PENDING"].includes(medical.reason)) {
+        } else if (medical.status === QUOTE_STATUSES.PENDING_UW && ["AGE_OUT_OF_AUTOMATIC_RANGE", "MANUAL_RATE_MISSING", "USER_MARKED_PENDING"].includes(medical.reason)) {
           if (!seenManual.has(key)) {
             addMessage(messages, VALIDATION_LEVELS.MANUAL_REVIEW, "MANUAL_RATE_REQUIRED", `${person.name || person.id || "人员"}：单独核保 / 待人工费率；该人员不计入自动医疗总保费 / separate underwriting; pending manual rate.`, { personId: person.id, variantId: variant.id });
             seenManual.add(key);
@@ -844,7 +841,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       ["来源 Source", SOURCE_WORKBOOK, "费率工作表 / Rate Sheet", SOURCE_SHEET_RATES],
       ["计划 / Plan", ...variants.map(variantLabel)],
       ["区域 / Area", ...variants.map(variant => getPlan(variant.planCode)?.area || "")],
-      ["费率列 / Rate Column", ...variants.map(variant => getPlan(variant.planCode)?.rateColumn || "NEEDS_CONFIRMATION")],
+      ["费率列 / Rate Column", ...variants.map(variant => getPlan(variant.planCode)?.rateColumn || "—")],
       ["年龄段 / Age Band", ...variants.map(variant => `${variant.planCode}\n每人医疗费率 / Medical Rate`)],
     ];
     const rowStyles = ["title", "meta", "header", "meta", "meta", "header"];
@@ -1198,8 +1195,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       checkbox.checked = selectedPlanCodes.includes(plan.code);
       const text = document.createElement("span");
       appendText(text, "strong", `${plan.code} · ${plan.name}${plan.option ? ` ${plan.option}` : ""}`);
-      appendText(text, "small", `${plan.area}${plan.rateColumn ? ` · 费率列 ${plan.rateColumn}` : " · 原始费率列待确认"}`);
-      if (plan.source.status === "NEEDS_CONFIRMATION") appendText(text, "small", plan.source.note, "plan-warning");
+      appendText(text, "small", `${plan.area} · 费率列 ${plan.rateColumn}`);
       label.append(checkbox, text);
       checkbox.addEventListener("change", event => {
         if (event.target.checked) {

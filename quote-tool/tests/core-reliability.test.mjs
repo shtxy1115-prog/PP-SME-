@@ -27,22 +27,40 @@ const variant = (id, planCode, extra = {}) => ({
   ...extra,
 });
 
-test("计划模型完整区分 P3/P4 的 WWE 与 WW，并保留 P3WW 费率缺口", () => {
+test("正式计划模型仅保留 Plan 3 WWE 与 Plan 4 WW/WWE", () => {
   const plans = core.PLANS;
+  const invalidPlan3Worldwide = ["P3", "WW"].join("");
   assert.deepEqual(
-    ["P3WWE", "P3WW", "P4WWE", "P4WW"].map(code => plans.find(plan => plan.code === code)?.area),
-    ["全球除美国", "全球", "全球除美国", "全球"],
+    plans.filter(plan => plan.group === "P3").map(plan => plan.code),
+    ["P3WWE"],
   );
-  assert.equal(plans.find(plan => plan.code === "P3WWE").rateColumn, "P3WWE");
-  assert.equal(plans.find(plan => plan.code === "P4WWE").rateColumn, "P4WWE");
-  assert.equal(plans.find(plan => plan.code === "P4WW").rateColumn, "P4WW");
-  assert.equal(plans.find(plan => plan.code === "P3WW").rateColumn, null);
-  assert.match(plans.find(plan => plan.code === "P3WW").source.note, /没有.*P3WW.*列/);
+  assert.equal(core.getPlan(invalidPlan3Worldwide), null);
+  assert.equal(plans.some(plan => plan.code === invalidPlan3Worldwide), false);
+  assert.deepEqual(
+    ["P3WWE", "P4WWE", "P4WW"].map(code => plans.find(plan => plan.code === code)?.area),
+    ["全球除美国", "全球除美国", "全球"],
+  );
+  assert.deepEqual(
+    ["P3WWE", "P4WWE", "P4WW"].map(code => plans.find(plan => plan.code === code)?.rateColumn),
+    ["P3WWE", "P4WWE", "P4WW"],
+  );
+  assert.equal(plans.every(plan => plan.rateColumn), true);
+  assert.equal(core.rateFor(40, "P3WWE"), 24439);
+  assert.equal(core.rateFor(40, "P4WWE"), 28147);
+  assert.equal(core.rateFor(40, "P4WW"), 47391);
+  const coverageArea = core.BENEFIT_DATA.find(item => item.benefitId === "COVERAGE_AREA");
+  assert.equal(coverageArea.planValues.P3WWE, "全球除美国\nWorldwide excluding US.");
+  assert.equal(coverageArea.planValues.P4WWE, "全球除美国\nWorldwide excluding US.");
+  assert.equal(coverageArea.planValues.P4WW, "全球\nWorldwide");
+  assert.equal(Object.prototype.hasOwnProperty.call(coverageArea.planValues, invalidPlan3Worldwide), false);
+  const tobCoverage = planCode => core.buildTobSheet(variant(`tob-${planCode}`, planCode), 0).rows.find(row => String(row[0]).includes("保障区域"));
+  assert.equal(tobCoverage("P3WWE")[1], "全球除美国\nWorldwide excluding US.");
+  assert.equal(tobCoverage("P4WWE")[1], "全球除美国\nWorldwide excluding US.");
+  assert.equal(tobCoverage("P4WW")[1], "全球\nWorldwide");
 });
 
-test("五类年龄/费率状态：65-69 自动，70+ 与 P3WW 待人工，不以 0 冒充费率", () => {
+test("年龄/费率状态：65-69 自动，70+ 待人工，不以 0 冒充费率", () => {
   const p4ww = core.getPlan("P4WW");
-  const p3ww = core.getPlan("P3WW");
   assert.equal(core.medicalPremiumFor(employee("E65", 65), p4ww).status, "AUTO_QUOTABLE");
   assert.equal(core.medicalPremiumFor(employee("E69", 69), p4ww).status, "AUTO_QUOTABLE");
   const pending70 = core.medicalPremiumFor(employee("E70", 70), p4ww);
@@ -53,11 +71,6 @@ test("五类年龄/费率状态：65-69 自动，70+ 与 P3WW 待人工，不以
     manualMedicalPremium: 120000,
   }), p4ww);
   assert.deepEqual({ status: manual70.status, premium: manual70.premium }, { status: "MANUAL_RATE", premium: 120000 });
-  assert.equal(core.medicalPremiumFor(employee("E3WW", 40), p3ww).status, "PENDING_UW");
-  assert.equal(core.medicalPremiumFor(employee("E3WWM", 40, {
-    quoteStatus: "MANUAL_RATE",
-    manualMedicalPremium: 90000,
-  }), p3ww).premium, 90000);
 });
 
 test("儿童 25 岁仍可自动报价，26 岁进入 INELIGIBLE", () => {
@@ -121,9 +134,9 @@ test("导出模型包含必需 sheets、状态/来源/共享责任与可解析�
     startDate: "2026-08-30",
     endDate: "2027-08-29",
     mode: "compare",
-    people: [employee("E1", 30)],
-    variants: [variant("v1", "P3WW")],
-    selectedPlanCodes: ["P3WW"],
+    people: [employee("E1", 70)],
+    variants: [variant("v1", "P3WWE")],
+    selectedPlanCodes: ["P3WWE"],
     pcpDirectBilling: false,
   });
   assert.deepEqual(model.sheets.map(sheet => sheet.name), [

@@ -18,8 +18,8 @@ const fixedCases = [
     check() { assert.equal(core.medicalPremiumFor(employee("E65", 65), "P4WW").status, "AUTO_QUOTABLE"); assert.equal(core.medicalPremiumFor(employee("E69", 69), "P4WW").status, "AUTO_QUOTABLE"); },
   },
   {
-    name: "70+ 与缺列费率人工路径",
-    check() { assert.equal(core.medicalPremiumFor(employee("E70", 70), "P4WW").status, "PENDING_UW"); assert.equal(core.medicalPremiumFor(employee("E3WW", 40), "P3WW").status, "PENDING_UW"); assert.equal(core.medicalPremiumFor(employee("E70M", 70, { quoteStatus: "MANUAL_RATE", manualMedicalPremium: 120000 }), "P4WW").premium, 120000); },
+    name: "70+ 人工路径",
+    check() { assert.equal(core.medicalPremiumFor(employee("E70", 70), "P4WW").status, "PENDING_UW"); assert.equal(core.medicalPremiumFor(employee("E70M", 70, { quoteStatus: "MANUAL_RATE", manualMedicalPremium: 120000 }), "P4WW").premium, 120000); },
   },
   {
     name: "儿童年龄边界",

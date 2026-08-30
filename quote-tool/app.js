@@ -248,8 +248,7 @@
       checkbox.checked = selectedPlanCodes.includes(plan.code);
       const text = document.createElement("span");
       appendText(text, "strong", `${plan.code} · ${plan.name}${plan.option ? ` ${plan.option}` : ""}`);
-      appendText(text, "small", `${plan.area}${plan.rateColumn ? ` · 费率列 ${plan.rateColumn}` : " · 原始费率列待确认"}`);
-      if (plan.source.status === "NEEDS_CONFIRMATION") appendText(text, "small", plan.source.note, "plan-warning");
+      appendText(text, "small", `${plan.area} · 费率列 ${plan.rateColumn}`);
       label.append(checkbox, text);
       checkbox.addEventListener("change", event => {
         if (event.target.checked) {
