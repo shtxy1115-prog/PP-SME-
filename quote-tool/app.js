@@ -22,6 +22,8 @@
   let selectedPlanCodes = [];
   let quoteVariants = [];
   let quoteMode = "group";
+  let copayOption = "none";
+  let preExistingOption = "standard";
 
   function todayString() {
     const date = new Date();
@@ -43,8 +45,8 @@
       wellness: source.wellness || "none",
       dental: source.dental || "none",
       vision: source.vision || "none",
-      copay: source.copay || "none",
-      preExisting: source.preExisting || "standard",
+      copay: source.copay || copayOption,
+      preExisting: source.preExisting || preExistingOption,
     };
   }
 
@@ -73,6 +75,8 @@
       startDate: $("startDate").value,
       endDate: $("endDate").value,
       pcpDirectBilling: $("pcpDirectBilling").checked,
+      preExistingOption,
+      copayOption,
       mode: quoteMode,
       people,
       variants: quoteVariants,
@@ -94,11 +98,16 @@
     if (!raw) return false;
     try {
       const state = JSON.parse(raw);
+      const storedVariants = Array.isArray(state.variants || state.quoteVariants) ? (state.variants || state.quoteVariants) : [];
+      const storedCopay = typeof state.copayOption === "string" ? core.getCopay(state.copayOption) : null;
+      const storedPreExisting = typeof state.preExistingOption === "string" ? core.getPreExisting(state.preExistingOption) : null;
+      copayOption = storedCopay?.code || (storedVariants.some(variant => variant.copay === "outpatient_from_sixth_20") ? "outpatient_from_sixth_20" : "none");
+      preExistingOption = storedPreExisting?.code || (storedVariants.some(variant => variant.preExisting === "fmu") ? "fmu" : "standard");
       people = Array.isArray(state.people) ? state.people.map(normalizePerson) : [];
       selectedPlanCodes = Array.isArray(state.selectedPlanCodes) ? state.selectedPlanCodes.filter(code => core.getPlan(code)) : [];
-      quoteVariants = Array.isArray(state.variants || state.quoteVariants)
-        ? (state.variants || state.quoteVariants).filter(variant => core.getPlan(variant.planCode)).map(variant => makeVariant(variant.planCode, variant))
-        : [];
+      quoteVariants = storedVariants
+        .filter(variant => core.getPlan(variant.planCode))
+        .map(variant => makeVariant(variant.planCode, { ...variant, copay: copayOption, preExisting: preExistingOption }));
       quoteMode = state.mode === "compare" || state.quoteMode === "compare" ? "compare" : "group";
       $("companyCn").value = typeof state.companyCn === "string" ? state.companyCn : "";
       $("companyEn").value = typeof state.companyEn === "string" ? state.companyEn : "";
@@ -106,6 +115,7 @@
       $("pcpDirectBilling").checked = state.pcpDirectBilling === true;
       selectedPlanCodes.forEach(code => { if (!quoteVariants.some(variant => variant.planCode === code)) quoteVariants.push(makeVariant(code)); });
       quoteVariants.forEach(variant => { if (!selectedPlanCodes.includes(variant.planCode)) selectedPlanCodes.push(variant.planCode); });
+      applyGlobalCoreOptions();
       return true;
     } catch {
       try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
@@ -136,6 +146,13 @@
 
   function selectedPlans() { return selectedPlanCodes.map(code => core.getPlan(code)).filter(Boolean); }
   function selectedVariantsForPlan(planCode) { return quoteVariants.filter(variant => variant.planCode === planCode); }
+
+  function applyGlobalCoreOptions() {
+    quoteVariants.forEach(variant => {
+      variant.copay = copayOption;
+      variant.preExisting = preExistingOption;
+    });
+  }
 
   function personPlan(person) {
     if (quoteMode === "compare") return selectedPlans()[0] || null;
@@ -272,67 +289,45 @@
     return core.money(option.premiumByPlan[plan.code]);
   }
 
-  function appendCoreConditionRow(panel, labelText, options, selectedCode, onChange, additionalText = "") {
-    const row = document.createElement("label");
-    row.className = "option-row";
-    appendText(row, "span", labelText);
-    const select = document.createElement("select");
-    const resolvedCode = selectedCode || options[0]?.code;
-    options.forEach(item => {
-      const option = appendText(select, "option", item.label);
-      option.value = item.code;
-      option.selected = resolvedCode === item.code;
-    });
-    select.addEventListener("change", () => onChange(select.value));
-    row.append(select);
-    const selected = options.find(item => item.code === resolvedCode) || options[0];
-    if (selected?.description) appendText(row, "small", selected.description, "option-price");
-    if (additionalText) appendText(row, "small", additionalText, "option-price");
-    panel.append(row);
-  }
-
-  function renderCoreConditions() {
-    const root = $("coreConditions");
+  function renderCoreOptions() {
+    const root = $("coreOptions");
     root.replaceChildren();
-    const selections = [];
-    selectedPlans().forEach(plan => {
-      selectedVariantsForPlan(plan.code).forEach(variant => selections.push({ plan, variant }));
+    const options = [
+      {
+        key: "copay",
+        id: "outpatientFromSixth20",
+        checked: copayOption === "outpatient_from_sixth_20",
+        title: "门诊第 6 次起就诊自付 20%",
+        description: "通过 PCP 就诊、互联网问诊、慢病送药不计入门诊次数；可与柏盛 PCP 首诊直付同时选择，Medical 保费下调 6%。",
+      },
+      {
+        key: "preExisting",
+        id: "fmuPreExisting",
+        checked: preExistingOption === "fmu",
+        title: "最高等级 FMU（11EE 以下）",
+        description: "FMU 需全员提供个人健康告知，不承担一切既往症；Medical 保费下调 5%。",
+      },
+    ];
+    options.forEach(option => {
+      const label = document.createElement("label");
+      label.className = "payment-condition";
+      const checkbox = document.createElement("input");
+      checkbox.id = option.id;
+      checkbox.type = "checkbox";
+      checkbox.checked = option.checked;
+      checkbox.addEventListener("change", () => {
+        if (option.key === "copay") copayOption = checkbox.checked ? "outpatient_from_sixth_20" : "none";
+        if (option.key === "preExisting") preExistingOption = checkbox.checked ? "fmu" : "standard";
+        applyGlobalCoreOptions();
+        saveState();
+        update();
+      });
+      const text = document.createElement("span");
+      appendText(text, "strong", option.title);
+      appendText(text, "small", option.description);
+      label.append(checkbox, text);
+      root.append(label);
     });
-    if (!selections.length) {
-      appendText(root, "p", "选择医疗计划后，可在此为每个报价方案设置既往症安排和自付比例。", "hint");
-      return;
-    }
-
-    const heading = document.createElement("div");
-    heading.className = "core-conditions-heading";
-    appendText(heading, "strong", "核心报价条件");
-    appendText(heading, "span", "既往症与自付比例按报价方案分别选择；柏盛 PCP 首诊直付为全局条件。", "hint");
-    root.append(heading);
-
-    const grid = document.createElement("div");
-    grid.className = "core-conditions-grid";
-    selections.forEach(({ plan, variant }) => {
-      const panel = document.createElement("div");
-      panel.className = "core-condition-panel";
-      appendText(panel, "h3", `${plan.code} · ${variant.name}`);
-      appendCoreConditionRow(
-        panel,
-        "既往症安排",
-        core.PRE_EXISTING_OPTIONS,
-        variant.preExisting || "standard",
-        value => { variant.preExisting = value; saveState(); update(); },
-      );
-      appendCoreConditionRow(
-        panel,
-        "自付比例",
-        core.COPAY_OPTIONS,
-        variant.copay || "none",
-        value => { variant.copay = value; saveState(); update(); },
-        "可与柏盛 PCP 首诊直付服务同时选择（急诊除外）。 / Can be combined with 柏盛 PCP first-visit direct billing (emergencies excluded).",
-      );
-      grid.append(panel);
-    });
-    root.append(grid);
   }
 
   function renderOptions() {
@@ -439,7 +434,7 @@
 
   function update() {
     renderMedicalPlans();
-    renderCoreConditions();
+    renderCoreOptions();
     renderOptions();
     renderPeople();
     renderSummary();
@@ -471,7 +466,7 @@
 
   function clearAllData() {
     if (!window.confirm("确定清空全部报价数据吗？团体资料、计划、福利组合和人员清单都将被删除。")) return;
-    people = []; quoteVariants = []; selectedPlanCodes = []; quoteMode = "group";
+    people = []; quoteVariants = []; selectedPlanCodes = []; quoteMode = "group"; copayOption = "none"; preExistingOption = "standard";
     $("companyCn").value = ""; $("companyEn").value = ""; $("pcpDirectBilling").checked = false; $("startDate").value = todayString(); updateEndDate();
     try { localStorage.removeItem(STORAGE_KEY); LEGACY_STORAGE_KEYS.forEach(key => localStorage.removeItem(key)); } catch { /* ignore */ }
     update();
