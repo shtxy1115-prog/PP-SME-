@@ -1029,107 +1029,108 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       rows.push([benefitDisplayName(item), coverage, item.sharedGroup || "—", `${item.sourceSheet}!A${item.sourceRow}`]);
       rowStyles.push("body");
     });
-    return { name: `方案${index + 1} TOB`, rows, rowStyles, widths: [52, 58, 28, 24], merges: ["A1:D1"] };
+    return { name: `方案${index + 1} TOB`, rows, rowStyles, widths: [34, 44, 22, 24], merges: ["A1:D1"] };
   }
 
   function buildQuotationSheet(state, variants) {
-    const summaryColumnCount = Math.max(4, 4 + variants.length * 3);
-    const summaryRow = (label, values = []) => {
-      const row = Array(summaryColumnCount).fill("");
-      row[0] = label;
-      values.forEach((value, index) => {
-        const valueIndex = 4 + index * 3;
-        if (valueIndex < row.length) row[valueIndex] = value;
-      });
-      return row;
-    };
+    const uniqueText = values => [...new Set(values.filter(Boolean))].join("\n");
+    const people = Array.isArray(state.people) ? state.people : [];
+    const copaySummary = uniqueText(variants.map(variant => selectedCopay(variant).label)) || selectedCopay().label;
+    const preExistingSummary = uniqueText(variants.map(variant => selectedPreExisting(variant).label)) || selectedPreExisting().label;
+    const quotationMode = state.mode === "compare" ? "同一批人员多方案比价 / Compare" : "按人员分配不同方案 / Group";
     const rows = [
       ["Prosper × Marsh SME 团体医疗保险报价表 Group Medical Insurance Quotation"],
-      summaryRow("文件版本 File Version", ["Core Reliability v4 · Source: " + SOURCE_WORKBOOK]),
-      summaryRow("团体中文名称 Company Name (Chinese)", [state.companyCn || ""]),
-      summaryRow("团体英文名称 Company Name (English)", [state.companyEn || ""]),
-      summaryRow("保障期限 Policy Period", [`${state.startDate || ""} 至 / to ${state.endDate || ""}`]),
-      summaryRow("支付条件 Payment Condition", [state.pcpDirectBilling ? "需通过柏盛 PCP 首诊方可涵盖直付服务（急诊除外）；医疗保费下调3%\nDirect billing is covered only through a 柏盛 PCP first visit; emergencies are excluded; 3% Medical premium discount" : "未选择柏盛 PCP 首诊直付服务\n柏盛 PCP direct billing not selected"]),
-      summaryRow("自付比例 Policy Co-payment", variants.map(variant => selectedCopay(variant).label)),
-      summaryRow("既往症安排 Pre-existing Conditions", variants.map(variant => selectedPreExisting(variant).label)),
-      summaryRow("报价模式 Quotation Mode", [state.mode === "compare" ? "同一批人员多方案比价 / Compare" : "按人员分配不同方案 / Group"]),
-      summaryRow("保费汇总 Premium Summary", variants.map(variantLabel)),
-      summaryRow("参保人数 Insured Members", variants.map(variant => `${membersForVariant(state, variant).length} 人 / members`)),
-      summaryRow("基础医疗保费 Base Medical Premium", variants.map(variant => totalsForVariant(state, variant).baseMedical)),
-      summaryRow("医疗保费优惠 Medical Discount", variants.map(variant => totalsForVariant(state, variant).discount)),
-      summaryRow("可选福利保费 Optional Benefits Premium", variants.map(variant => totalsForVariant(state, variant).optional)),
-      summaryRow("最终保费 Total Premium", variants.map(variant => totalsForVariant(state, variant).total)),
-      summaryRow("人员保费明细 Member Premium Details", variants.map(variant => `${variant.planCode} · ${variant.name || "未命名方案"}`)),
-      ["序号 No.", "姓名/编号 Name", "人员类型 Type", "年龄 Age", ...variants.flatMap(variant => [`${variant.planCode}\n状态 / Status`, `${variant.planCode}\n人工医疗费率 / Manual Rate`, `${variant.planCode}\n个人最终保费 / Individual Total`])],
+      ["来源 / Source", "Core Reliability v4 · Source: " + SOURCE_WORKBOOK, "", ""],
+      ["团体中文名称 Company Name (Chinese)", state.companyCn || "", "团体英文名称 Company Name (English)", state.companyEn || ""],
+      ["保障期限 Policy Period", `${state.startDate || ""} 至 / to ${state.endDate || ""}`, "报价模式 Quotation Mode", quotationMode],
+      ["支付条件 Payment Condition", state.pcpDirectBilling ? "需通过柏盛 PCP 首诊方可涵盖直付服务（急诊除外）；医疗保费下调3%\nDirect billing is covered only through a 柏盛 PCP first visit; emergencies are excluded; 3% Medical premium discount" : "未选择柏盛 PCP 首诊直付服务\n柏盛 PCP direct billing not selected", "参保人数 Insured Members", `${people.length} 人 / members`],
+      ["自付比例 Policy Co-payment", copaySummary, "既往症安排 Pre-existing Conditions", preExistingSummary],
+      ["报价方案 / Quotation Plans", `${variants.length} 个方案 / plan${variants.length === 1 ? "" : "s"}`, "", ""],
     ];
-    const rowStyles = ["title", "meta", "meta", "meta", "meta", "meta", "meta", "meta", "meta", "section", "body", "body", "body", "body", "header", "section", "header"];
+    const rowStyles = ["title", "meta", "meta", "meta", "meta", "meta", "section"];
+    const merges = ["A1:D1", "B2:D2"];
     const typeLabel = { employee: "员工\nEmployee", spouse: "配偶\nSpouse", child: "子女\nChild" };
-    const people = Array.isArray(state.people) ? state.people : [];
-    people.forEach((person, index) => {
-      const cells = [index + 1, person.name || person.id || "", typeLabel[person.type] || person.type || "", personAge(person) ?? ""];
-      variants.forEach(variant => {
-        const isMember = membersForVariant(state, variant).includes(person);
-        if (!isMember) { cells.push("—", "—", "—"); return; }
-        const breakdown = premiumBreakdown(person, variant, state);
-        const medical = medicalPremiumFor(person, getPlan(variant.planCode));
-        cells.push(displayStatus(breakdown.status), medical.status === QUOTE_STATUSES.MANUAL_RATE ? medical.premium : "—", displayMemberPremium(breakdown));
-      });
-      rows.push(cells);
+    variants.forEach((variant, index) => {
+      const plan = getPlan(variant.planCode);
+      const members = membersForVariant(state, variant);
+      const totals = totalsForVariant(state, variant);
+      rows.push(["方案 / Quotation Plan", `${variantLabel(variant, index)}`, "区域 / Area", plan?.area || ""]);
+      rowStyles.push("meta");
+      rows.push(["费率列 / Rate Column", plan?.rateColumn || "—", "方案条件 / Selected Conditions", `既往症：${selectedPreExisting(variant).label}\n自付比例：${selectedCopay(variant).label}\n柏盛 PCP 直付：${state.pcpDirectBilling ? "已选择（急诊除外）" : "未选择"}`]);
+      rowStyles.push("meta");
+      rows.push(["参保人数 / Insured Members", `${members.length} 人 / members`, "基础医疗保费 Base Medical Premium", totals.baseMedical]);
       rowStyles.push("body");
-    });
-    const widths = [10, 28, 18, 10, ...variants.flatMap(() => [29, 22, 24])];
-    const lastColumn = columnName(summaryColumnCount - 1);
-    const merges = [`A1:${lastColumn}1`];
-    for (let rowNumber = 2; rowNumber <= 16; rowNumber += 1) {
-      merges.push(`A${rowNumber}:D${rowNumber}`);
-      variants.forEach((_, index) => {
-        const start = columnName(4 + index * 3);
-        const end = columnName(6 + index * 3);
-        merges.push(`${start}${rowNumber}:${end}${rowNumber}`);
+      rows.push(["医疗保费优惠 Medical Discount", totals.discount, "可选福利保费 Optional Benefits Premium", totals.optional]);
+      rowStyles.push("discount");
+      rows.push(["最终保费 Total Premium", totals.total, "核保状态 / Underwriting Status", `自动报价 ${members.filter(person => premiumBreakdown(person, variant, state).status === QUOTE_STATUSES.AUTO_QUOTABLE).length} 人；待人工/不符合条件 ${totals.pending + totals.ineligible} 人`]);
+      rowStyles.push("total");
+      rows.push(["人员保费明细 Member Premium Details", "", "", ""]);
+      rowStyles.push("section");
+      merges.push(`A${rows.length}:D${rows.length}`);
+      rows.push(["人员 / Member", "人员类型 / Type", "年龄 / Age", "状态与个人保费 / Status & Premium"]);
+      rowStyles.push("header");
+      people.forEach((person, personIndex) => {
+        const isMember = members.includes(person);
+        if (!isMember) {
+          rows.push([`${personIndex + 1} · ${person.name || person.id || ""}`, typeLabel[person.type] || person.type || "", personAge(person) ?? "", "— / Not in this plan"]);
+          rowStyles.push("body");
+          return;
+        }
+        const breakdown = premiumBreakdown(person, variant, state);
+        const medical = medicalPremiumFor(person, plan);
+        const manualRate = medical.status === QUOTE_STATUSES.MANUAL_RATE ? `人工医疗费率 / Manual Rate: ${money(medical.premium)}` : "";
+        rows.push([
+          `${personIndex + 1} · ${person.name || person.id || ""}`,
+          typeLabel[person.type] || person.type || "",
+          personAge(person) ?? "",
+          [displayStatus(breakdown.status), manualRate, `个人最终保费 / Individual Total: ${displayMemberPremium(breakdown)}`].filter(Boolean).join("\n"),
+        ]);
+        rowStyles.push("body");
       });
-    }
-    return { name: "报价 Quotation", rows, rowStyles, widths, merges };
+    });
+    return { name: "报价 Quotation", rows, rowStyles, widths: [34, 44, 22, 30], merges };
   }
 
   function buildPremiumSheet(state, variants) {
-    const totalColumns = Math.max(2, variants.length + 1);
-    const sourceRow = Array(totalColumns).fill("");
-    sourceRow[0] = "来源 Source";
-    sourceRow[1] = `${SOURCE_WORKBOOK}\n费率工作表 / Rate Sheet：${SOURCE_SHEET_RATES}`;
     const rows = [
       ["费率表 Premium"],
-      sourceRow,
-      ["计划 / Plan", ...variants.map(variantLabel)],
-      ["区域 / Area", ...variants.map(variant => getPlan(variant.planCode)?.area || "")],
-      ["费率列 / Rate Column", ...variants.map(variant => getPlan(variant.planCode)?.rateColumn || "—")],
-      ["方案条件 / Selected Conditions", ...variants.map(variant => `既往症：${selectedPreExisting(variant).label}\n自付比例：${selectedCopay(variant).label}\n柏盛 PCP 直付：${state.pcpDirectBilling ? "已选择（急诊除外）" : "未选择"}`)],
-      ["年龄段 / Age Band", ...variants.map(variant => `${variant.planCode}\n每人医疗费率 / Medical Rate`)],
+      ["来源 Source", `${SOURCE_WORKBOOK}\n费率工作表 / Rate Sheet：${SOURCE_SHEET_RATES}`],
     ];
-    const rowStyles = ["title", "meta", "header", "meta", "meta", "section", "header"];
-    RATE_BANDS.forEach(band => {
-      rows.push([band.label, ...variants.map(variant => {
-        const plan = getPlan(variant.planCode);
+    const rowStyles = ["title", "meta"];
+    variants.forEach((variant, index) => {
+      const plan = getPlan(variant.planCode);
+      if (index > 0) {
+        rows.push([`方案 ${index + 1} / Quotation Plan`, variantLabel(variant, index)]);
+        rowStyles.push("section");
+      }
+      rows.push(["计划 / Plan", `${variantLabel(variant, index)}`]);
+      rowStyles.push("header");
+      rows.push(["区域 / Area", plan?.area || ""]);
+      rowStyles.push("meta");
+      rows.push(["费率列 / Rate Column", plan?.rateColumn || "—"]);
+      rowStyles.push("meta");
+      rows.push(["方案条件 / Selected Conditions", `既往症：${selectedPreExisting(variant).label}\n自付比例：${selectedCopay(variant).label}\n柏盛 PCP 直付：${state.pcpDirectBilling ? "已选择（急诊除外）" : "未选择"}`]);
+      rowStyles.push("section");
+      rows.push(["年龄段 / Age Band", `${variant.planCode}\n每人医疗费率 / Medical Rate`]);
+      rowStyles.push("header");
+      RATE_BANDS.forEach(band => {
         const rate = rateFor(band.min, plan);
-        return rate === null ? "单独核保 / 待人工费率" : rate;
-      })]);
+        rows.push([band.label, rate === null ? "单独核保 / 待人工费率" : rate]);
+        rowStyles.push("body");
+      });
+      rows.push(["70-75*", "单独核保 / 待人工费率"]);
+      rowStyles.push("section");
+      rows.push(["可选福利 / Optional Benefits", ["maternity", "wellness", "dental", "vision"].map(type => selectedOptionLabel(variant, type)).join("\n")]);
+      rowStyles.push("section");
+      const optional = optionalPremiumFor(variant, plan);
+      rows.push(["可选福利保费 / Optional Premium", optional.pending ? "单独核保 / 待人工费率" : optional.premium]);
       rowStyles.push("body");
     });
-    rows.push(["70-75*", ...variants.map(() => "单独核保 / 待人工费率")]);
-    rowStyles.push("section");
-    rows.push(["可选福利 / Optional Benefits", ...variants.map(variant => Object.keys(OPTIONAL_SECTION_TYPES).map(type => selectedOptionLabel(variant, type)).join("\n"))]);
-    rowStyles.push("section");
-    rows.push(["可选福利保费 / Optional Premium", ...variants.map(variant => {
-      const plan = getPlan(variant.planCode);
-      const optional = optionalPremiumFor(variant, plan);
-      return optional.pending ? "单独核保 / 待人工费率" : optional.premium;
-    })]);
-    rowStyles.push("body");
-    const widths = [24, ...variants.map(() => variants.length === 1 ? 42 : 34)];
-    if (variants.length === 0) widths.push(42);
-    const lastColumn = columnName(totalColumns - 1);
-    const merges = [`A1:${lastColumn}1`];
-    if (totalColumns > 2) merges.push(`B2:${lastColumn}2`);
-    return { name: "费率 Premium", rows, rowStyles, widths, merges };
+    if (!variants.length) {
+      rows.push(["提示 / Notice", "选择医疗计划后显示对应费率。"]);
+      rowStyles.push("section");
+    }
+    return { name: "费率 Premium", rows, rowStyles, widths: [28, 92], merges: ["A1:B1"] };
   }
 
   function buildListSheet(name, title, values, widths = [8, 110]) {
@@ -1752,9 +1753,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function isCurrencyCell(sheet, rowIndex, value, columnIndex = 0) {
     if (typeof value !== "number") return false;
-    const label = String(sheet.rows?.[rowIndex]?.[0] ?? "");
+    const label = (sheet.rows?.[rowIndex] || []).filter(cell => typeof cell === "string").join(" ");
     if (sheet.name === "费率 Premium" && rowIndex >= 7) return true;
-    if (sheet.name === "报价 Quotation" && rowIndex >= 16 && columnIndex >= 5 && (columnIndex - 5) % 3 === 0) return true;
+    if (sheet.name === "报价 Quotation" && /保费|Premium|费率|Rate|优惠|Discount|总额|Total/.test(label)) return true;
     return /保费|Premium|费率|Rate|优惠|Discount|总额|Total/.test(label);
   }
 

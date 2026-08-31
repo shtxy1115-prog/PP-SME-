@@ -112,9 +112,9 @@ test("自付比例选项：第6次起自付20%，指定就诊不计次数，Medi
   });
   const quotationRows = model.sheets.find(sheet => sheet.name === "报价 Quotation").rows;
   const quotationCopayRow = quotationRows.find(row => String(row[0]).includes("自付比例 Policy Co-payment"));
-  assert.match(quotationCopayRow[4], /门诊第6次起/);
+  assert.match(quotationCopayRow.join("\n"), /门诊第6次起/);
   const discountRow = quotationRows.find(row => String(row[0]).includes("医疗保费优惠 Medical Discount"));
-  assert.equal(discountRow[4], 2843);
+  assert.equal(discountRow[1], 2843);
 });
 
 test("FMU 是最高等级既往症选项，且可与自付比例和柏盛 PCP 直付同时选择", () => {
@@ -141,11 +141,11 @@ test("FMU 是最高等级既往症选项，且可与自付比例和柏盛 PCP �
     pcpDirectBilling: true,
   }).sheets.find(sheet => sheet.name === "报价 Quotation").rows;
   const paymentRow = quotationRows.find(row => String(row[0]).includes("支付条件 Payment Condition"));
-  assert.match(paymentRow[4], /柏盛 PCP 首诊/);
-  assert.match(paymentRow[4], /急诊除外/);
-  const preExistingRow = quotationRows.find(row => String(row[0]).includes("既往症安排"));
-  assert.match(preExistingRow[4], /FMU/);
-  assert.match(preExistingRow[4], /不承担一切既往症/);
+  assert.match(paymentRow.join("\n"), /柏盛 PCP 首诊/);
+  assert.match(paymentRow.join("\n"), /急诊除外/);
+  const preExistingRow = quotationRows.find(row => row.some(cell => String(cell).includes("既往症安排")));
+  assert.match(preExistingRow.join("\n"), /FMU/);
+  assert.match(preExistingRow.join("\n"), /不承担一切既往症/);
 });
 
 test("儿童 25 岁仍可自动报价，26 岁进入 INELIGIBLE", () => {
@@ -222,4 +222,35 @@ test("导出模型包含必需 sheets、状态/来源/共享责任与可解析�
   const tob = model.sheets.find(sheet => sheet.name === "方案1 TOB");
   assert.ok(tob.rows.flat().some(value => String(value).includes("THERAPY_TCM_HERBAL")));
   assert.equal(model.metadata.sourceWorkbook, "PP & Prosper SME 方案整理表 20260814 v2.xlsx");
+});
+
+test("报价 Excel 采用纵向四列布局，不把多个方案横向塞在同一张摘要行", () => {
+  const model = core.buildWorkbookModel({
+    companyCn: "测试团体",
+    companyEn: "Test Group",
+    startDate: "2026-08-30",
+    endDate: "2027-08-29",
+    mode: "compare",
+    people: [employee("E1", 40)],
+    variants: [variant("v1", "P201"), variant("v2", "P4WW")],
+    selectedPlanCodes: ["P201", "P4WW"],
+    pcpDirectBilling: false,
+  });
+  const quotation = model.sheets.find(sheet => sheet.name === "报价 Quotation");
+  assert.equal(quotation.widths.length, 4);
+  assert.equal(quotation.merges.includes("A1:D1"), true);
+  assert.equal(quotation.merges.some(ref => /^[E-Z]/.test(ref)), false);
+  assert.equal(quotation.rows.every(row => row.length <= 4), true);
+  assert.equal(quotation.rows.filter(row => String(row[0]).includes("人员保费明细")).length, 2);
+
+  const premium = model.sheets.find(sheet => sheet.name === "费率 Premium");
+  assert.equal(premium.widths.length, 2);
+  assert.equal(premium.rows.every(row => row.length <= 2), true);
+  assert.equal(premium.rows.filter(row => String(row[0]).includes("计划 / Plan")).length, 2);
+  assert.ok(premium.widths[1] >= 80);
+
+  const tob = model.sheets.find(sheet => sheet.name === "方案1 TOB");
+  assert.deepEqual(quotation.widths, [34, 44, 22, 30]);
+  assert.deepEqual(premium.widths, [28, 92]);
+  assert.deepEqual(tob.widths, [34, 44, 22, 24]);
 });

@@ -532,9 +532,9 @@
 
   function isCurrencyCell(sheet, rowIndex, value, columnIndex = 0) {
     if (typeof value !== "number") return false;
-    const label = String(sheet.rows?.[rowIndex]?.[0] ?? "");
+    const label = (sheet.rows?.[rowIndex] || []).filter(cell => typeof cell === "string").join(" ");
     if (sheet.name === "费率 Premium" && rowIndex >= 7) return true;
-    if (sheet.name === "报价 Quotation" && rowIndex >= 16 && columnIndex >= 5 && (columnIndex - 5) % 3 === 0) return true;
+    if (sheet.name === "报价 Quotation" && /保费|Premium|费率|Rate|优惠|Discount|总额|Total/.test(label)) return true;
     return /保费|Premium|费率|Rate|优惠|Discount|总额|Total/.test(label);
   }
 
