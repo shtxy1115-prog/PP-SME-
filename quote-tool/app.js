@@ -472,9 +472,32 @@
     update();
   }
 
-  function rowHeight(row) {
-    const lines = row.reduce((max, value) => Math.max(max, String(value ?? "").split("\n").reduce((count, line) => count + Math.max(1, Math.ceil(Array.from(line).length / 45)), 0)), 1);
-    return Math.min(360, Math.max(22, 16 * lines + 8));
+  function mergedColumnWidth(sheet, rowIndex, columnIndex) {
+    const widths = sheet.widths || [];
+    const merge = (sheet.merges || []).find(ref => {
+      const match = String(ref).match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+      if (!match || Number(match[2]) !== rowIndex + 1 || Number(match[4]) !== rowIndex + 1) return false;
+      const start = columnIndexFromName(match[1]);
+      const end = columnIndexFromName(match[3]);
+      return columnIndex >= start && columnIndex <= end;
+    });
+    if (!merge) return widths[columnIndex] || 24;
+    const match = merge.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+    const start = columnIndexFromName(match[1]);
+    const end = columnIndexFromName(match[3]);
+    return widths.slice(start, end + 1).reduce((sum, width) => sum + (width || 24), 0);
+  }
+
+  function rowHeight(row, sheet, rowIndex) {
+    const lines = row.reduce((max, value, columnIndex) => {
+      const width = mergedColumnWidth(sheet, rowIndex, columnIndex);
+      const lineCount = String(value ?? "").split("\n").reduce((count, line) => {
+        const displayWidth = Array.from(line).reduce((sum, character) => sum + (/[^\u0000-\u00ff]/.test(character) ? 1 : 0.55), 0);
+        return count + Math.max(1, Math.ceil(displayWidth / Math.max(10, width * 0.9)));
+      }, 0);
+      return Math.max(max, lineCount);
+    }, 1);
+    return Math.min(300, Math.max(22, 15 * lines + 8));
   }
 
   const WORKBOOK_COLORS = Object.freeze({
@@ -520,7 +543,7 @@
     worksheet["!cols"] = (sheet.widths || []).map(width => ({ wch: width }));
     worksheet["!rows"] = sheet.rows.map((row, rowIndex) => {
       const kind = workbookRowKind(sheet, rowIndex);
-      const computed = rowHeight(row);
+      const computed = rowHeight(row, sheet, rowIndex);
       if (kind === "title") return { hpt: 38 };
       if (kind === "header") return { hpt: Math.min(82, Math.max(42, computed)) };
       if (kind === "section") return { hpt: Math.min(120, Math.max(28, computed)) };

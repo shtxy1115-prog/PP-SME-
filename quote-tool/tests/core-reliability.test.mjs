@@ -112,9 +112,9 @@ test("自付比例选项：第6次起自付20%，指定就诊不计次数，Medi
   });
   const quotationRows = model.sheets.find(sheet => sheet.name === "报价 Quotation").rows;
   const quotationCopayRow = quotationRows.find(row => String(row[0]).includes("自付比例 Policy Co-payment"));
-  assert.match(quotationCopayRow[1], /门诊第6次起/);
+  assert.match(quotationCopayRow[4], /门诊第6次起/);
   const discountRow = quotationRows.find(row => String(row[0]).includes("医疗保费优惠 Medical Discount"));
-  assert.equal(discountRow[1], 2843);
+  assert.equal(discountRow[4], 2843);
 });
 
 test("FMU 是最高等级既往症选项，且可与自付比例和柏盛 PCP 直付同时选择", () => {
@@ -141,11 +141,11 @@ test("FMU 是最高等级既往症选项，且可与自付比例和柏盛 PCP �
     pcpDirectBilling: true,
   }).sheets.find(sheet => sheet.name === "报价 Quotation").rows;
   const paymentRow = quotationRows.find(row => String(row[0]).includes("支付条件 Payment Condition"));
-  assert.match(paymentRow[1], /柏盛 PCP 首诊/);
-  assert.match(paymentRow[1], /急诊除外/);
+  assert.match(paymentRow[4], /柏盛 PCP 首诊/);
+  assert.match(paymentRow[4], /急诊除外/);
   const preExistingRow = quotationRows.find(row => String(row[0]).includes("既往症安排"));
-  assert.match(preExistingRow[1], /FMU/);
-  assert.match(preExistingRow[1], /不承担一切既往症/);
+  assert.match(preExistingRow[4], /FMU/);
+  assert.match(preExistingRow[4], /不承担一切既往症/);
 });
 
 test("儿童 25 岁仍可自动报价，26 岁进入 INELIGIBLE", () => {

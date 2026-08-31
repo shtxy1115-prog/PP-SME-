@@ -875,28 +875,39 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function buildQuotationSheet(state, variants) {
+    const summaryColumnCount = Math.max(4, 4 + variants.length * 3);
+    const summaryRow = (label, values = []) => {
+      const row = Array(summaryColumnCount).fill("");
+      row[0] = label;
+      values.forEach((value, index) => {
+        const valueIndex = 4 + index * 3;
+        if (valueIndex < row.length) row[valueIndex] = value;
+      });
+      return row;
+    };
     const rows = [
       ["Prosper × Marsh SME 团体医疗保险报价表 Group Medical Insurance Quotation"],
-      ["文件版本 File Version", "Core Reliability v4 · Source: " + SOURCE_WORKBOOK],
-      ["团体中文名称 Company Name (Chinese)", state.companyCn || ""],
-      ["团体英文名称 Company Name (English)", state.companyEn || ""],
-      ["保障期限 Policy Period", `${state.startDate || ""} 至 / to ${state.endDate || ""}`],
-      ["支付条件 Payment Condition", state.pcpDirectBilling ? "需通过柏盛 PCP 首诊方可涵盖直付服务（急诊除外）；医疗保费下调3%\nDirect billing is covered only through a 柏盛 PCP first visit; emergencies are excluded; 3% Medical premium discount" : "未选择柏盛 PCP 首诊直付服务\n柏盛 PCP direct billing not selected"],
-      ["自付比例 Policy Co-payment", ...variants.map(variant => selectedCopay(variant).label)],
-      ["既往症安排 Pre-existing Conditions", ...variants.map(variant => selectedPreExisting(variant).label)],
-      ["报价模式 Quotation Mode", state.mode === "compare" ? "同一批人员多方案比价 / Compare" : "按人员分配不同方案 / Group"],
-      ["保费汇总 Premium Summary", ...variants.map(variantLabel)],
-      ["参保人数 Insured Members", ...variants.map(variant => `${membersForVariant(state, variant).length} 人 / members`)],
-      ["基础医疗保费 Base Medical Premium", ...variants.map(variant => totalsForVariant(state, variant).baseMedical)],
-      ["医疗保费优惠 Medical Discount", ...variants.map(variant => totalsForVariant(state, variant).discount)],
-      ["可选福利保费 Optional Benefits Premium", ...variants.map(variant => totalsForVariant(state, variant).optional)],
-      ["最终保费 Total Premium", ...variants.map(variant => totalsForVariant(state, variant).total)],
-      ["人员保费明细 Member Premium Details", ...variants.map(variant => `${variant.planCode} · ${variant.name || "未命名方案"}`)],
+      summaryRow("文件版本 File Version", ["Core Reliability v4 · Source: " + SOURCE_WORKBOOK]),
+      summaryRow("团体中文名称 Company Name (Chinese)", [state.companyCn || ""]),
+      summaryRow("团体英文名称 Company Name (English)", [state.companyEn || ""]),
+      summaryRow("保障期限 Policy Period", [`${state.startDate || ""} 至 / to ${state.endDate || ""}`]),
+      summaryRow("支付条件 Payment Condition", [state.pcpDirectBilling ? "需通过柏盛 PCP 首诊方可涵盖直付服务（急诊除外）；医疗保费下调3%\nDirect billing is covered only through a 柏盛 PCP first visit; emergencies are excluded; 3% Medical premium discount" : "未选择柏盛 PCP 首诊直付服务\n柏盛 PCP direct billing not selected"]),
+      summaryRow("自付比例 Policy Co-payment", variants.map(variant => selectedCopay(variant).label)),
+      summaryRow("既往症安排 Pre-existing Conditions", variants.map(variant => selectedPreExisting(variant).label)),
+      summaryRow("报价模式 Quotation Mode", [state.mode === "compare" ? "同一批人员多方案比价 / Compare" : "按人员分配不同方案 / Group"]),
+      summaryRow("保费汇总 Premium Summary", variants.map(variantLabel)),
+      summaryRow("参保人数 Insured Members", variants.map(variant => `${membersForVariant(state, variant).length} 人 / members`)),
+      summaryRow("基础医疗保费 Base Medical Premium", variants.map(variant => totalsForVariant(state, variant).baseMedical)),
+      summaryRow("医疗保费优惠 Medical Discount", variants.map(variant => totalsForVariant(state, variant).discount)),
+      summaryRow("可选福利保费 Optional Benefits Premium", variants.map(variant => totalsForVariant(state, variant).optional)),
+      summaryRow("最终保费 Total Premium", variants.map(variant => totalsForVariant(state, variant).total)),
+      summaryRow("人员保费明细 Member Premium Details", variants.map(variant => `${variant.planCode} · ${variant.name || "未命名方案"}`)),
       ["序号 No.", "姓名/编号 Name", "人员类型 Type", "年龄 Age", ...variants.flatMap(variant => [`${variant.planCode}\n状态 / Status`, `${variant.planCode}\n人工医疗费率 / Manual Rate`, `${variant.planCode}\n个人最终保费 / Individual Total`])],
     ];
     const rowStyles = ["title", "meta", "meta", "meta", "meta", "meta", "meta", "meta", "meta", "section", "body", "body", "body", "body", "header", "section", "header"];
     const typeLabel = { employee: "员工\nEmployee", spouse: "配偶\nSpouse", child: "子女\nChild" };
-    state.people.forEach((person, index) => {
+    const people = Array.isArray(state.people) ? state.people : [];
+    people.forEach((person, index) => {
       const cells = [index + 1, person.name || person.id || "", typeLabel[person.type] || person.type || "", personAge(person) ?? ""];
       variants.forEach(variant => {
         const isMember = membersForVariant(state, variant).includes(person);
@@ -908,14 +919,28 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       rows.push(cells);
       rowStyles.push("body");
     });
-    const widths = [8, 28, 18, 10, ...variants.flatMap(() => [29, 22, 24])];
-    return { name: "报价 Quotation", rows, rowStyles, widths, merges: [`A1:${columnName(widths.length - 1)}1`] };
+    const widths = [10, 28, 18, 10, ...variants.flatMap(() => [29, 22, 24])];
+    const lastColumn = columnName(summaryColumnCount - 1);
+    const merges = [`A1:${lastColumn}1`];
+    for (let rowNumber = 2; rowNumber <= 16; rowNumber += 1) {
+      merges.push(`A${rowNumber}:D${rowNumber}`);
+      variants.forEach((_, index) => {
+        const start = columnName(4 + index * 3);
+        const end = columnName(6 + index * 3);
+        merges.push(`${start}${rowNumber}:${end}${rowNumber}`);
+      });
+    }
+    return { name: "报价 Quotation", rows, rowStyles, widths, merges };
   }
 
   function buildPremiumSheet(state, variants) {
+    const totalColumns = Math.max(2, variants.length + 1);
+    const sourceRow = Array(totalColumns).fill("");
+    sourceRow[0] = "来源 Source";
+    sourceRow[1] = `${SOURCE_WORKBOOK}\n费率工作表 / Rate Sheet：${SOURCE_SHEET_RATES}`;
     const rows = [
       ["费率表 Premium"],
-      ["来源 Source", SOURCE_WORKBOOK, "费率工作表 / Rate Sheet", SOURCE_SHEET_RATES],
+      sourceRow,
       ["计划 / Plan", ...variants.map(variantLabel)],
       ["区域 / Area", ...variants.map(variant => getPlan(variant.planCode)?.area || "")],
       ["费率列 / Rate Column", ...variants.map(variant => getPlan(variant.planCode)?.rateColumn || "—")],
@@ -941,8 +966,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       return optional.pending ? "单独核保 / 待人工费率" : optional.premium;
     })]);
     rowStyles.push("body");
-    const widths = [24, ...variants.map(() => 32)];
-    return { name: "费率 Premium", rows, rowStyles, widths, merges: [`A1:${columnName(widths.length - 1)}1`] };
+    const widths = [24, ...variants.map(() => variants.length === 1 ? 42 : 34)];
+    if (variants.length === 0) widths.push(42);
+    const lastColumn = columnName(totalColumns - 1);
+    const merges = [`A1:${lastColumn}1`];
+    if (totalColumns > 2) merges.push(`B2:${lastColumn}2`);
+    return { name: "费率 Premium", rows, rowStyles, widths, merges };
   }
 
   function buildListSheet(name, title, values, widths = [8, 110]) {
@@ -969,10 +998,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function buildPreauthSheet() {
-    const rows = [["事先授权说明 / Pre-authorization"]];
-    const rowStyles = ["title"];
-    rows.push(["接受下列治疗前，被保险人须在预定开始治疗日期前至少两个工作日向医疗服务供应商提交事先授权申请表（附有关病历、诊断报告等）。\nMember must submit the Pre-authorization request with related medical documents and diagnostic reports at least two working days before the scheduled treatment."]);
-    rowStyles.push("section");
+    const rows = [
+      ["事先授权说明 / Pre-authorization"],
+      ["说明 / Overview", "接受下列治疗前，被保险人须在预定开始治疗日期前至少两个工作日向医疗服务供应商提交事先授权申请表（附有关病历、诊断报告等）。\nMember must submit the Pre-authorization request with related medical documents and diagnostic reports at least two working days before the scheduled treatment."],
+    ];
+    const rowStyles = ["title", "section"];
     PREAUTH_ITEMS.forEach((item, index) => { rows.push([index + 1, item]); rowStyles.push("body"); });
     rows.push(["注意 / Note", "紧急情况下须在开始接受治疗后48小时内通知；未获授权或未及时通知的，按合同计算金额的60%给付。\nFor emergency situations, notify us within 48 hours. If pre-authorization is not obtained or notice is late, only 60% of the amount calculated under the contract is payable."]);
     rowStyles.push("section");
@@ -1504,9 +1534,32 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     update();
   }
 
-  function rowHeight(row) {
-    const lines = row.reduce((max, value) => Math.max(max, String(value ?? "").split("\n").reduce((count, line) => count + Math.max(1, Math.ceil(Array.from(line).length / 45)), 0)), 1);
-    return Math.min(360, Math.max(22, 16 * lines + 8));
+  function mergedColumnWidth(sheet, rowIndex, columnIndex) {
+    const widths = sheet.widths || [];
+    const merge = (sheet.merges || []).find(ref => {
+      const match = String(ref).match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+      if (!match || Number(match[2]) !== rowIndex + 1 || Number(match[4]) !== rowIndex + 1) return false;
+      const start = columnIndexFromName(match[1]);
+      const end = columnIndexFromName(match[3]);
+      return columnIndex >= start && columnIndex <= end;
+    });
+    if (!merge) return widths[columnIndex] || 24;
+    const match = merge.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+    const start = columnIndexFromName(match[1]);
+    const end = columnIndexFromName(match[3]);
+    return widths.slice(start, end + 1).reduce((sum, width) => sum + (width || 24), 0);
+  }
+
+  function rowHeight(row, sheet, rowIndex) {
+    const lines = row.reduce((max, value, columnIndex) => {
+      const width = mergedColumnWidth(sheet, rowIndex, columnIndex);
+      const lineCount = String(value ?? "").split("\n").reduce((count, line) => {
+        const displayWidth = Array.from(line).reduce((sum, character) => sum + (/[^\u0000-\u00ff]/.test(character) ? 1 : 0.55), 0);
+        return count + Math.max(1, Math.ceil(displayWidth / Math.max(10, width * 0.9)));
+      }, 0);
+      return Math.max(max, lineCount);
+    }, 1);
+    return Math.min(300, Math.max(22, 15 * lines + 8));
   }
 
   const WORKBOOK_COLORS = Object.freeze({
@@ -1552,7 +1605,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     worksheet["!cols"] = (sheet.widths || []).map(width => ({ wch: width }));
     worksheet["!rows"] = sheet.rows.map((row, rowIndex) => {
       const kind = workbookRowKind(sheet, rowIndex);
-      const computed = rowHeight(row);
+      const computed = rowHeight(row, sheet, rowIndex);
       if (kind === "title") return { hpt: 38 };
       if (kind === "header") return { hpt: Math.min(82, Math.max(42, computed)) };
       if (kind === "section") return { hpt: Math.min(120, Math.max(28, computed)) };
