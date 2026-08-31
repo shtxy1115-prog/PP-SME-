@@ -2,7 +2,7 @@
 
 ## 验证结论
 
-本轮 v4 已完成可执行的 Core Reliability 修复并通过核心规则、导出模型、XLSX 二进制和浏览器加载验证。本次业务规则更正已删除旧版错误的 Plan 3 全球变体；Plan 3 仅保留 WWE，Plan 4 保留 WW 与 WWE。
+本轮 v4 已完成可执行的 Core Reliability 修复并通过核心规则、导出模型、XLSX 二进制和浏览器加载验证。本次业务规则更正已删除旧版错误的 Plan 3 全球变体；Plan 3 仅保留 WWE，Plan 4 保留 WW 与 WWE。本轮新增自付比例方案选项：门诊第 6 次起就诊自付 20%，指定的 PCP、互联网问诊和慢病送药不计入门诊次数，并使 Medical 保费下调 6%。
 
 本报告不把浏览器环境未暴露 Blob 下载事件记为“下载通过”；同一导出路径生成的 XLSX 已通过 SheetJS 回读、ZIP 完整性检查和 openpyxl 结构检查。
 
@@ -12,6 +12,7 @@
 - 年龄/费率路径实现 `AUTO_QUOTABLE`、`MANUAL_RATE`、`PENDING_UW`、`INELIGIBLE`；65–69 岁可自动报价，70 岁以上或缺失年龄进入待人工费率；人工医疗费率计入总保费，待人工费率不计入且不以静默 0 代替；子女最大年龄为 25 岁。
 - 福利表被规范化为结构化 `Benefit Data`，保留双语责任、各真实计划/区域组合、共享责任组、源工作表和源行号；理疗/中医/中草药、体检/免疫、牙科共享组与生育、妊娠并发症独立责任分开表达。
 - Compare 使用同一批人员跨方案比较；Group 按唯一 `Plan` 计算限制，同一 Plan 的多个福利变体不重复计数；生育三年不可变更仅作提示。
+- 自付比例作为每个报价变体的独立选项；标准选项为 0%，新增“门诊第 6 次起就诊自付 20%”选项使 Medical 保费下调 6%，并在 UI、报价表和 TOB 中保留 PCP、互联网问诊、慢病送药不计入门诊次数的保障说明。
 - XLSX 输出包含报价、费率、每个方案 TOB、HCP、参保条件、预授权和重大既往症工作表，不包含增值服务工作表。
 - 构建脚本将 CSS、核心规则、浏览器应用和本地 SheetJS 组件内嵌为单文件；无服务端、无 CDN、无运行时网络依赖。
 
@@ -29,14 +30,16 @@
 | Compare：同一批人员、多方案 | 不触发 Group 计划数量限制 |
 | 生育：少于 5 名员工、非所有变体包含生育 | `ERROR` |
 | 生育三年不可变更 | `WARNING`，不阻断其他计算 |
+| 自付比例：门诊第 6 次起自付 20% | Medical 基础保费不变，优惠为基础 Medical 的 6%；PCP、互联网问诊、慢病送药不计入次数的说明进入报价表和 TOB |
 
 ## 自动化测试与结构检查
 
 - `node --check quote-tool/core.js`：通过。
 - `node --check quote-tool/app.js`：通过。
 - `node --check quote-tool/build-standalone.mjs`：通过。
-- `node --test quote-tool/tests/core-reliability.test.mjs`：7/7 通过。
+- `node --test quote-tool/tests/core-reliability.test.mjs`：8/8 通过，包含自付比例选项、6% Medical 折扣、报价表和 TOB 回归。
 - `node quote-tool/tests/xlsx-acceptance.mjs`：5 个固定案例及 XLSX 写入/回读通过。
+- XLSX 固定案例同时验证自付比例选项、6% Medical 折扣说明和报价表/TOB 输出。
 - XLSX `unzip -t`：通过，无压缩包错误。
 - openpyxl 回读：7 个必需工作表名称一致；关键工作表均可读取；TOB 中存在 `THERAPY_TCM_HERBAL`，并存在包含“妊娠并发症”的独立责任行。
 
@@ -53,7 +56,7 @@
 ## 浏览器与离线验证
 
 - 通过本地回环地址加载最终单文件，页面标题为 `PP & Prosper SME 报价器 · Core Reliability v4`。
-- 页面包含报价表单、有效计划选择、Plan 3 WWE / Plan 4 WW-WWE 区域映射和“导出报价 Excel”按钮。
+- 页面包含报价表单、有效计划选择、Plan 3 WWE / Plan 4 WW-WWE 区域映射、自付比例选项（含 6% Medical 折扣说明）和“导出报价 Excel”按钮。
 - 最终页面浏览器运行日志为空。
 - 单文件内包含 3 个脚本块，均可独立解析；本地 CSS、核心脚本、应用脚本和 SheetJS 均已内嵌。
 - 未发现脚本或样式的外部 `http(s)` 依赖。
@@ -73,6 +76,14 @@
 - 2026-08-30 已确认并落地：Plan 3 只有 WWE（全球除美）；Plan 4 同时存在 WW（全球）和 WWE（全球除美）。
 - 旧版错误的 Plan 3 全球变体已从 `PLANS`、UI、TOB、报价状态、测试和 standalone 中移除。
 - 本轮仅修正该计划组合及其引用，不修改 Excel 样式，不扩展 Scope。
+
+## 本轮自付比例业务规则
+
+- 每个报价方案可选择 `outpatient_from_sixth_20`：门诊第 6 次起就诊自付 20%。
+- 通过 PCP 就诊、互联网问诊、慢病送药不计入门诊次数；该规则作为选项说明和 TOB 责任文字输出。
+- 选择该项时，仅 Medical 基础保费下调 6%；既有 FMU 5% 和 PCP 首诊直付 3% 仍按原有规则叠加，生育、体检、牙科和眼科等可选福利保费不被折扣。
+- 当前报价器没有理赔事件或门诊次数数据，因此本轮不新增理赔计次/理赔 adjudication 引擎；系统负责方案选择、报价计算和正式输出中的责任说明。
+- 未选择或历史状态缺少 `copay` 字段时按标准自付比例 0% 处理，保持旧数据兼容。
 
 ## 仍待业务确认 / 不在本轮伪造
 

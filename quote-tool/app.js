@@ -43,6 +43,7 @@
       wellness: source.wellness || "none",
       dental: source.dental || "none",
       vision: source.vision || "none",
+      copay: source.copay || "none",
       preExisting: source.preExisting || "standard",
     };
   }
@@ -296,6 +297,20 @@
         [["standard", "标准承保 / Standard"], ["fmu", "FMU（医疗保费 -5%）"]].forEach(([value, text]) => { const option = appendText(underSelect, "option", text); option.value = value; option.selected = variant.preExisting === value; });
         underSelect.addEventListener("change", () => { variant.preExisting = underSelect.value; saveState(); update(); });
         underLabel.append(underSelect); panel.append(underLabel);
+        const copayLabel = document.createElement("label");
+        copayLabel.className = "option-row";
+        appendText(copayLabel, "span", "自付比例");
+        const copaySelect = document.createElement("select");
+        core.COPAY_OPTIONS.forEach(copayOption => {
+          const option = appendText(copaySelect, "option", copayOption.label);
+          option.value = copayOption.code;
+          option.selected = (variant.copay || "none") === copayOption.code;
+        });
+        copaySelect.addEventListener("change", () => { variant.copay = copaySelect.value; saveState(); update(); });
+        copayLabel.append(copaySelect);
+        const selectedCopay = core.getCopay(variant.copay) || core.COPAY_OPTIONS[0];
+        appendText(copayLabel, "small", selectedCopay.description, "option-price");
+        panel.append(copayLabel);
         OPTIONAL_TYPES.forEach(type => {
           const row = document.createElement("label");
           row.className = "option-row";

@@ -253,9 +253,30 @@
   const SECTION_BY_BENEFIT = new Map(BENEFIT_DATA.map(item => [item.benefitId, item.section]));
   const OPTIONAL_SECTION_TYPES = Object.freeze({ maternity: "maternity", wellness: "wellness", dental: "dental", vision: "vision" });
 
+  const COPAY_OPTIONS = Object.freeze([
+    {
+      code: "none",
+      label: "标准自付比例 0% / Standard co-payment 0%",
+      description: "按现行保障责任执行。\nCurrent policy benefits apply.",
+      coverage: "标准自付比例 0%。\nStandard co-payment 0%.",
+      medicalDiscountRate: 0,
+    },
+    {
+      code: "outpatient_from_sixth_20",
+      label: "门诊第6次起就诊自付20%（医疗保费下调6%） / 20% co-payment from the 6th outpatient visit (6% Medical premium discount)",
+      description: "通过PCP就诊、互联网问诊、慢病送药不计入门诊次数。\nPCP visits, online consultations and chronic medicine delivery do not count toward the outpatient visit count.",
+      coverage: "门诊第6次起就诊自付20%；通过PCP就诊、互联网问诊、慢病送药不计入门诊次数。\n20% co-payment from the 6th outpatient visit; PCP visits, online consultations and chronic medicine delivery do not count toward the outpatient visit count.",
+      medicalDiscountRate: 0.06,
+    },
+  ]);
+
   function getPlan(planOrCode) {
     if (!planOrCode) return null;
     return typeof planOrCode === "string" ? PLAN_BY_CODE.get(planOrCode) || null : PLAN_BY_CODE.get(planOrCode.code) || planOrCode;
+  }
+
+  function getCopay(code) {
+    return COPAY_OPTIONS.find(option => option.code === (code || "none")) || null;
   }
 
   function personAge(person) {
@@ -333,7 +354,10 @@
   }
 
   function medicalDiscountRate(variant = {}, options = {}) {
-    return (variant.preExisting === "fmu" ? 0.05 : 0) + (options.pcpDirectBilling ? 0.03 : 0);
+    const copay = getCopay(variant.copay || "none");
+    return (variant.preExisting === "fmu" ? 0.05 : 0)
+      + (options.pcpDirectBilling ? 0.03 : 0)
+      + (copay?.medicalDiscountRate || 0);
   }
 
   function premiumBreakdown(person, variant, state = {}) {
@@ -456,6 +480,7 @@
     variants.forEach(variant => {
       const plan = getPlan(variant.planCode);
       if (!plan) return;
+      if (!getCopay(variant.copay || "none")) addMessage(messages, VALIDATION_LEVELS.ERROR, "UNKNOWN_COPAY_OPTION", `${plan.code} 使用了未知自付比例选项 / unknown policy co-payment option.`, { variantId: variant.id });
       Object.keys(OPTIONAL_SECTION_TYPES).forEach(type => {
         const code = variant[type] || "none";
         if (code === "none") return;
@@ -528,6 +553,10 @@
     return getOptional(type, variant?.[type] || "none")?.label || "未选择 / Not selected";
   }
 
+  function selectedCopay(variant) {
+    return getCopay(variant?.copay || "none") || COPAY_OPTIONS[0];
+  }
+
   function isOptionalSelected(variant, item) {
     const type = item.section;
     return (variant?.[type] || "none") !== "none";
@@ -538,7 +567,7 @@
     const rows = [
       [`${variantLabel(variant, index)}\nTable of Benefits`],
       ["Plan / 计划", plan ? `${plan.code} · ${plan.name}${plan.option ? ` ${plan.option}` : ""}` : "未知 Plan", "区域 / Area", plan?.area || ""],
-      ["所选可选福利 / Selected Options", `生育：${selectedOptionLabel(variant, "maternity")}\n体检：${selectedOptionLabel(variant, "wellness")}\n牙科：${selectedOptionLabel(variant, "dental")}\n眼科：${selectedOptionLabel(variant, "vision")}`, "Source", SOURCE_WORKBOOK],
+      ["所选可选福利 / Selected Options", `自付比例：${selectedCopay(variant).label}\n生育：${selectedOptionLabel(variant, "maternity")}\n体检：${selectedOptionLabel(variant, "wellness")}\n牙科：${selectedOptionLabel(variant, "dental")}\n眼科：${selectedOptionLabel(variant, "vision")}`, "Source", SOURCE_WORKBOOK],
       ["福利责任 Benefit", "赔付限额/责任 Coverage and Limit", "共享责任组 Shared Group", "来源 Source"],
     ];
     const rowStyles = ["title", "meta", "meta", "header"];
@@ -553,6 +582,7 @@
       let coverage = selected || !["maternity", "wellness", "dental", "vision"].includes(item.section)
         ? item.planValues[plan?.code] ?? null
         : "未选择 / Not selected";
+      if (item.benefitId === "POLICY_COPAY") coverage = selectedCopay(variant).coverage;
       if (coverage === null) {
         coverage = item.sharedGroup
           ? "与共享责任组共用同一限额；本行不重复计入\nShared limit; not duplicated on this row"
@@ -572,6 +602,7 @@
       ["团体英文名称 Company Name (English)", state.companyEn || ""],
       ["保障期限 Policy Period", `${state.startDate || ""} 至 / to ${state.endDate || ""}`],
       ["支付条件 Payment Condition", state.pcpDirectBilling ? "PCP 首诊直付服务（急诊除外）；医疗保费下调3%\nPCP direct billing; 3% medical discount" : "未选择 PCP 首诊直付服务\nPCP direct billing not selected"],
+      ["自付比例 Policy Co-payment", ...variants.map(variant => selectedCopay(variant).label)],
       ["报价模式 Quotation Mode", state.mode === "compare" ? "同一批人员多方案比价 / Compare" : "按人员分配不同方案 / Group"],
       ["保费汇总 Premium Summary", ...variants.map(variantLabel)],
       ["参保人数 Insured Members", ...variants.map(variant => `${membersForVariant(state, variant).length} 人 / members`)],
@@ -582,7 +613,7 @@
       ["人员保费明细 Member Premium Details", ...variants.map(variant => `${variant.planCode} · ${variant.name || "未命名方案"}`)],
       ["序号 No.", "姓名/编号 Name", "人员类型 Type", "年龄 Age", ...variants.flatMap(variant => [`${variant.planCode}\n状态 / Status`, `${variant.planCode}\n人工医疗费率 / Manual Rate`, `${variant.planCode}\n个人最终保费 / Individual Total`])],
     ];
-    const rowStyles = ["title", "meta", "meta", "meta", "meta", "meta", "meta", "section", "body", "body", "body", "body", "header", "section", "header"];
+    const rowStyles = ["title", "meta", "meta", "meta", "meta", "meta", "meta", "meta", "section", "body", "body", "body", "body", "header", "section", "header"];
     const typeLabel = { employee: "员工\nEmployee", spouse: "配偶\nSpouse", child: "子女\nChild" };
     state.people.forEach((person, index) => {
       const cells = [index + 1, person.name || person.id || "", typeLabel[person.type] || person.type || "", personAge(person) ?? ""];
@@ -678,6 +709,7 @@
     RATE_BANDS,
     PLANS,
     OPTIONALS,
+    COPAY_OPTIONS,
     BENEFIT_DATA,
     SOURCE_SECTIONS,
     HCP,
@@ -687,6 +719,7 @@
     VALIDATION_LEVELS,
     getPlan,
     getOptional,
+    getCopay,
     personAge,
     rateFor,
     medicalPremiumFor,

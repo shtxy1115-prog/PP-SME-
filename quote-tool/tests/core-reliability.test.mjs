@@ -23,6 +23,7 @@ const variant = (id, planCode, extra = {}) => ({
   wellness: "none",
   dental: "none",
   vision: "none",
+  copay: "none",
   preExisting: "standard",
   ...extra,
 });
@@ -71,6 +72,49 @@ test("年龄/费率状态：65-69 自动，70+ 待人工，不以 0 冒充费率
     manualMedicalPremium: 120000,
   }), p4ww);
   assert.deepEqual({ status: manual70.status, premium: manual70.premium }, { status: "MANUAL_RATE", premium: 120000 });
+});
+
+test("自付比例选项：第6次起自付20%，指定就诊不计次数，Medical 保费下调6%", () => {
+  const plan = core.getPlan("P4WW");
+  const person = employee("E40", 40);
+  const standard = variant("standard", "P4WW");
+  const copay = variant("copay", "P4WW", { copay: "outpatient_from_sixth_20" });
+  const copayOption = core.getCopay(copay.copay);
+
+  assert.equal(copayOption.code, "outpatient_from_sixth_20");
+  assert.match(copayOption.label, /门诊第6次起.*20%/);
+  assert.match(copayOption.description, /PCP.*互联网问诊.*慢病送药/);
+  assert.equal(core.medicalDiscountRate(standard, { pcpDirectBilling: false }), 0);
+  assert.equal(core.medicalDiscountRate(copay, { pcpDirectBilling: false }), 0.06);
+  assert.equal(core.medicalDiscountRate(copay, { pcpDirectBilling: true }), 0.09);
+
+  const base = core.premiumBreakdown(person, standard, { pcpDirectBilling: false });
+  const discounted = core.premiumBreakdown(person, copay, { pcpDirectBilling: false });
+  assert.equal(base.baseMedical, 47391);
+  assert.equal(discounted.baseMedical, 47391);
+  assert.ok(Math.abs(discounted.discount - 2843.46) < 1e-9);
+  assert.ok(Math.abs(discounted.total - 44547.54) < 1e-9);
+  assert.equal(discounted.optional, 0);
+  const withOptional = core.premiumBreakdown(person, { ...copay, maternity: "m30" }, { pcpDirectBilling: false });
+  assert.equal(withOptional.optional, 4992);
+  assert.ok(Math.abs(withOptional.discount - 2843.46) < 1e-9);
+
+  const tob = core.buildTobSheet(copay, 0);
+  const tobCopayRow = tob.rows.find(row => String(row[0]).includes("自付比例"));
+  assert.match(tobCopayRow[1], /门诊第6次起/);
+  assert.match(tobCopayRow[1], /PCP.*互联网问诊.*慢病送药/);
+  const model = core.buildWorkbookModel({
+    mode: "compare",
+    people: [person],
+    variants: [copay],
+    selectedPlanCodes: [plan.code],
+    pcpDirectBilling: false,
+  });
+  const quotationRows = model.sheets.find(sheet => sheet.name === "报价 Quotation").rows;
+  const quotationCopayRow = quotationRows.find(row => String(row[0]).includes("自付比例 Policy Co-payment"));
+  assert.match(quotationCopayRow[1], /门诊第6次起/);
+  const discountRow = quotationRows.find(row => String(row[0]).includes("医疗保费优惠 Medical Discount"));
+  assert.ok(Math.abs(discountRow[1] - 2843.46) < 1e-9);
 });
 
 test("儿童 25 岁仍可自动报价，26 岁进入 INELIGIBLE", () => {

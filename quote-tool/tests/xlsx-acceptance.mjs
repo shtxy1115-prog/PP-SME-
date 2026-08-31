@@ -38,7 +38,7 @@ const fixedCases = [
     name: "生育/共享责任与 XLSX 结构",
     check() {
       const people = [1, 2, 3, 4, 5].map(index => employee(`E${index}`, 30 + index));
-      const state = { companyCn: "测试团体", companyEn: "Test Group", startDate: "2026-08-30", endDate: "2027-08-29", mode: "compare", people, variants: [variant("maternity", "P201", { maternity: "m30", wellness: "w3000", dental: "d5000" })], selectedPlanCodes: ["P201"], pcpDirectBilling: false };
+      const state = { companyCn: "测试团体", companyEn: "Test Group", startDate: "2026-08-30", endDate: "2027-08-29", mode: "compare", people, variants: [variant("maternity", "P201", { maternity: "m30", wellness: "w3000", dental: "d5000", copay: "outpatient_from_sixth_20" })], selectedPlanCodes: ["P201"], pcpDirectBilling: false };
       const messages = core.validate(state);
       assert.equal(messages.some(message => message.code === "MATERNITY_THREE_YEAR" && message.level === "WARNING"), true);
       assert.equal(core.BENEFIT_DATA.find(item => item.benefitId === "THERAPY").sharedGroup, "THERAPY_TCM_HERBAL");
@@ -60,6 +60,10 @@ const fixedCases = [
       const tobText = XLSX.utils.sheet_to_json(readBack.Sheets["方案1 TOB"], { header: 1, raw: false }).flat().join("\n");
       assert.match(tobText, /THERAPY_TCM_HERBAL/);
       assert.match(tobText, /PREGNANCY_COMPLICATIONS|妊娠并发症/);
+      assert.match(tobText, /门诊第6次起就诊自付20%/);
+      const quotationText = XLSX.utils.sheet_to_json(readBack.Sheets["报价 Quotation"], { header: 1, raw: false }).flat().join("\n");
+      assert.match(quotationText, /自付比例 Policy Co-payment/);
+      assert.match(quotationText, /医疗保费下调6%/);
     },
   },
 ];
