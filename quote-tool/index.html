@@ -9,48 +9,75 @@
 </head>
 <body>
   <header class="site-header">
-    <div>
-      <p class="eyebrow">PP &amp; PROSPER</p>
-      <h1>SME 团体医疗保险报价器</h1>
-      <p class="subtitle">离线版 · Core Reliability v4 · 基于 2026-08-14 费率、福利原文与核保边界</p>
+    <div class="brand-lockup">
+      <div class="brand-mark" aria-hidden="true">PP</div>
+      <div class="brand-copy">
+        <p class="brand-kicker">PP &amp; PROSPER</p>
+        <h1>SME 团体医疗报价器</h1>
+        <p class="brand-subtitle">Core Reliability v4 · 离线工作台</p>
+      </div>
+      <span class="brand-divider" aria-hidden="true"></span>
+      <span class="brand-context">团体医疗<br>报价工作台</span>
     </div>
     <div class="header-actions">
+      <span class="privacy-note">本地生成 · 不上传人员资料</span>
       <button id="clearAllButton" class="secondary danger-button" type="button">清空全部数据</button>
       <button id="downloadButton" class="primary" type="button">导出报价 Excel</button>
     </div>
   </header>
 
   <main>
-    <section class="card">
-      <div class="section-heading"><div><p class="eyebrow">01 · 团体资料</p><h2>报价信息</h2></div><span class="tag">人民币 · 一年期</span></div>
-      <div class="form-grid company-grid">
-        <label>团体中文名称<input id="companyCn" placeholder="例如：上海示例企业有限公司"></label>
-        <label>团体英文名称<input id="companyEn" placeholder="Example Company (Shanghai) Co., Ltd."></label>
-        <label>保险起期<input id="startDate" type="date"></label>
-        <label>保险止期<input id="endDate" type="date" readonly></label>
+    <section class="intro-section" aria-label="报价工作台说明">
+      <div class="intro-lead">
+        <p class="intro-kicker">OFFLINE QUOTATION WORKSPACE</p>
+        <h2>从团体资料到正式报价，清晰完成每一步</h2>
+        <p class="intro-copy">录入团体信息、选择医疗计划和福利组合、添加参保人员后，即时查看保费结果并导出正式报价文件。</p>
+        <div class="intro-status"><span class="status-dot" aria-hidden="true">✓</span><span>当前版本已锁定正式费率、福利原文和核保边界</span></div>
       </div>
-      <label class="payment-condition"><input id="pcpDirectBilling" type="checkbox"> <span><strong>柏盛 PCP 首诊直付服务（急诊除外）</strong><small>需通过柏盛 PCP 首诊方可涵盖直付服务；该选项可与门诊自付比例同时选择，医疗保费下调 3%。</small></span></label>
-      <div id="coreOptions" class="core-options" aria-live="polite"></div>
+      <nav class="step-nav" aria-label="报价步骤">
+        <a href="#company"><span>01</span><div><b>团体资料</b><small>填写报价抬头与保险期限</small></div></a>
+        <a href="#plans"><span>02</span><div><b>计划与福利</b><small>选择正式医疗计划与组合</small></div></a>
+        <a href="#people"><span>03</span><div><b>参保人员</b><small>录入成员并检查报价状态</small></div></a>
+        <a href="#results"><span>04</span><div><b>报价结果</b><small>核对汇总并生成 Excel</small></div></a>
+      </nav>
     </section>
 
-    <section class="card">
-      <div class="section-heading"><div><p class="eyebrow">02 · 计划与福利组合</p><h2>选择医疗计划</h2></div><span class="hint">员工≤5人可选1个唯一 Plan；员工＞5人最多2个唯一 Plan</span></div>
+    <section class="card content-section" id="company">
+      <div class="section-heading"><div class="heading-left"><span class="step-number">01</span><div><p class="eyebrow">团体资料 / GROUP PROFILE</p><h2>报价信息</h2><p class="section-subtitle">先完成报价抬头和保险期限，后续计划与人员区域将自动解锁。</p></div></div><span class="tag">人民币 · 一年期</span></div>
+      <div class="form-panel">
+        <div class="form-grid company-grid">
+          <label class="field"><span>团体中文名称</span><input id="companyCn" placeholder="例如：上海示例企业有限公司"></label>
+          <label class="field"><span>团体英文名称</span><input id="companyEn" placeholder="Example Company (Shanghai) Co., Ltd."></label>
+          <label class="field"><span>保险起期 <b>*</b></span><input id="startDate" type="date"></label>
+          <label class="field"><span>保险止期</span><input id="endDate" type="date" readonly></label>
+        </div>
+      </div>
+      <div class="core-option-stack">
+        <label class="payment-condition option-card core-option-card"><input id="pcpDirectBilling" type="checkbox"> <span><strong>柏盛 PCP 首诊直付服务（急诊除外）</strong><small>需通过柏盛 PCP 首诊方可涵盖直付服务；该选项可与门诊自付比例同时选择，医疗保费下调 3%。</small></span></label>
+        <div id="coreOptions" class="core-options" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="card content-section" id="plans">
+      <div class="section-heading"><div class="heading-left"><span class="step-number">02</span><div><p class="eyebrow">计划与福利组合 / PLAN DESIGN</p><h2>选择医疗计划</h2><p class="section-subtitle">先选医疗计划，再为每个报价变体配置福利。</p></div></div><span class="hint">员工≤5人可选1个唯一 Plan；员工＞5人最多2个唯一 Plan</span></div>
       <fieldset class="quote-mode">
         <legend>报价模式</legend>
-        <label><input type="radio" name="quoteMode" value="compare"> 同一批人员多方案比价</label>
-        <label><input type="radio" name="quoteMode" value="group"> 按人员分配不同方案</label>
+        <label class="mode-choice"><input type="radio" name="quoteMode" value="compare"> <span><strong>同一批人员多方案比价</strong><small>每个方案都对整批人员计算</small></span></label>
+        <label class="mode-choice"><input type="radio" name="quoteMode" value="group"> <span><strong>按人员分配不同方案</strong><small>员工分配方案，家属继承关联员工</small></span></label>
         <small>比价模式中每个方案均对整批人员计费；分组模式中员工分配一个变体，家属继承关联员工方案。同一 Plan 的多个变体只计一个 Plan。</small>
       </fieldset>
+      <div class="subsection-heading"><div><h3>医疗计划</h3><p>有效计划会继续沿用正式费率列和区域映射。</p></div></div>
       <div id="medicalPlans" class="medical-plan-grid"></div>
-      <div class="benefits-heading"><h2>报价方案与福利组合</h2><span class="hint">同一医疗计划可建立多个福利组合报价方案</span></div>
+      <div class="benefits-heading"><div><h2>报价方案与福利组合</h2><p>同一医疗计划可建立多个福利组合报价方案。</p></div><span class="hint">福利选择仅作用于对应方案变体</span></div>
       <div id="benefitOptions" class="benefit-grid"></div>
     </section>
 
-    <section class="card">
-      <div class="section-heading"><div><p class="eyebrow">03 · 参保人员</p><h2>人员清单</h2></div><button id="addPersonButton" class="secondary" type="button">+ 添加人员</button></div>
+    <section class="card content-section" id="people">
+      <div class="section-heading with-action"><div class="heading-left"><span class="step-number">03</span><div><p class="eyebrow">参保人员 / INSURED MEMBERS</p><h2>人员清单</h2><p class="section-subtitle">按人员类型、年龄和方案分配逐行核对报价状态。</p></div></div><button id="addPersonButton" class="secondary" type="button">＋ 添加人员</button></div>
       <p id="peopleHint" class="hint">员工与家属按本人年龄计费。65–69岁有自动费率；70岁以上或来源费率缺失时进入单独核保。</p>
-      <div class="table-wrap">
-        <table id="peopleTable">
+      <div class="table-wrap people-table-wrap">
+        <table id="peopleTable" class="people-table">
+          <colgroup><col class="col-name"><col class="col-type"><col class="col-employee-id"><col class="col-related-id"><col class="col-gender"><col class="col-dob"><col class="col-age"><col class="col-status"><col class="col-manual"><col class="col-assignment"><col class="col-actions"></colgroup>
           <thead><tr><th>姓名/编号</th><th>人员类型</th><th>员工编号（仅员工）</th><th>关联员工编号（仅家属）</th><th>性别</th><th>出生日期</th><th>年龄</th><th>报价状态</th><th>人工医疗费率</th><th>方案分配</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
@@ -62,10 +89,15 @@
       </div>
     </section>
 
-    <section class="card results-card">
-      <div class="section-heading"><div><p class="eyebrow">04 · 报价结果</p><h2>保费汇总</h2></div><strong id="totalPremium">¥0</strong></div>
+    <section class="card content-section results-card" id="results">
+      <div class="section-heading"><div class="heading-left"><span class="step-number">04</span><div><p class="eyebrow">报价结果 / QUOTATION RESULT</p><h2>保费汇总</h2><p class="section-subtitle">导出前请确认所有必填信息和人工复核项目。</p></div></div><strong id="totalPremium">¥0</strong></div>
       <div id="summary" class="summary-grid"></div>
       <div id="validation" class="validation" role="status"></div>
+    </section>
+
+    <section class="download-section" id="downloadSection">
+      <div><span class="download-mark" aria-hidden="true">✓</span><div><p class="download-kicker">READY TO EXPORT</p><h2>生成正式报价文件</h2><p>报价数据将在当前设备生成，不上传人员信息。</p></div></div>
+      <button id="downloadButtonBottom" class="primary primary-large" type="button">导出报价 Excel</button>
     </section>
   </main>
 

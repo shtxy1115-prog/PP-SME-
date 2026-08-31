@@ -259,7 +259,7 @@
     root.replaceChildren();
     core.PLANS.forEach(plan => {
       const label = document.createElement("label");
-      label.className = "medical-plan";
+      label.className = "medical-plan option-card";
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.value = plan.code;
@@ -310,7 +310,7 @@
     ];
     options.forEach(option => {
       const label = document.createElement("label");
-      label.className = "payment-condition";
+      label.className = "payment-condition option-card core-option-card";
       const checkbox = document.createElement("input");
       checkbox.id = option.id;
       checkbox.type = "checkbox";
@@ -338,10 +338,10 @@
     plans.forEach(plan => {
       selectedVariantsForPlan(plan.code).forEach(variant => {
         const panel = document.createElement("div");
-        panel.className = "option-panel";
+        panel.className = "option-panel benefit-panel";
         appendText(panel, "h3", `${plan.code} · ${variant.name}`);
         const nameLabel = document.createElement("label");
-        nameLabel.className = "option-row";
+        nameLabel.className = "option-row field";
         appendText(nameLabel, "span", "报价方案名称");
         const nameInput = document.createElement("input");
         nameInput.value = variant.name;
@@ -350,7 +350,7 @@
         panel.append(nameLabel);
         OPTIONAL_TYPES.forEach(type => {
           const row = document.createElement("label");
-          row.className = "option-row";
+          row.className = "option-row field";
           appendText(row, "span", { maternity: "生育福利", wellness: "体检/疫苗", dental: "牙科福利", vision: "眼科福利" }[type]);
           const select = document.createElement("select");
           core.OPTIONALS[type].forEach(item => {
@@ -501,19 +501,19 @@
   }
 
   const WORKBOOK_COLORS = Object.freeze({
-    navy: "173C79",
-    blue: "1E4C91",
-    ink: "17233D",
-    muted: "68738A",
-    line: "D8E1EE",
+    navy: "FFFFFF",
+    blue: "217346",
+    ink: "222222",
+    muted: "667085",
+    line: "D9DEE7",
     white: "FFFFFF",
-    soft: "F6F9FD",
-    header: "DFEAF8",
-    section: "EEF4FB",
-    total: "E8F5EE",
-    totalInk: "20684B",
-    discount: "FFF5DE",
-    discountInk: "9A5D00",
+    soft: "F8FAFC",
+    header: "F2F4F7",
+    section: "F7F9FB",
+    total: "EAF4EE",
+    totalInk: "217346",
+    discount: "FFF7E6",
+    discountInk: "8B5B13",
   });
   const THIN_BORDER = Object.freeze({ style: "thin", color: { rgb: WORKBOOK_COLORS.line } });
   const BODY_BORDER = Object.freeze({ bottom: THIN_BORDER });
@@ -579,10 +579,10 @@
     const xf = (fontId, fillId, borderId, numFmtId = 0, horizontal = "left", vertical = "top", applyNumberFormat = false) => `<xf numFmtId="${numFmtId}" fontId="${fontId}" fillId="${fillId}" borderId="${borderId}" xfId="0" applyAlignment="1"${applyNumberFormat ? " applyNumberFormat=\"1\"" : ""}><alignment horizontal="${horizontal}" vertical="${vertical}" wrapText="1"/></xf>`;
     const fonts = [
       font("Aptos", 10, false, WORKBOOK_COLORS.ink),
-      font("Aptos Display", 15, true, WORKBOOK_COLORS.white),
-      font("Aptos", 10, true, WORKBOOK_COLORS.navy),
+      font("Aptos Display", 15, true, WORKBOOK_COLORS.ink),
       font("Aptos", 10, true, WORKBOOK_COLORS.blue),
-      font("Aptos", 10, true, WORKBOOK_COLORS.navy),
+      font("Aptos", 10, true, WORKBOOK_COLORS.blue),
+      font("Aptos", 10, true, WORKBOOK_COLORS.blue),
       font("Aptos", 10, false, WORKBOOK_COLORS.ink),
       font("Aptos", 10, true, WORKBOOK_COLORS.ink),
       font("Aptos", 10, false, WORKBOOK_COLORS.ink),
@@ -690,6 +690,7 @@
     $("clearButton").addEventListener("click", clearAllData);
     $("clearAllButton").addEventListener("click", clearAllData);
     $("downloadButton").addEventListener("click", exportExcel);
+    $("downloadButtonBottom").addEventListener("click", exportExcel);
     document.querySelectorAll('input[name="quoteMode"]').forEach(input => input.addEventListener("change", () => { quoteMode = input.value; if (quoteMode === "compare") people.forEach(person => { person.assignment = ""; }); saveState(); update(); }));
   }
 

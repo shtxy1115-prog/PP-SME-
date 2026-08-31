@@ -5,9 +5,28 @@ import test from "node:test";
 const root = new URL("../", import.meta.url);
 const html = readFileSync(new URL("index.html", root), "utf8");
 const app = readFileSync(new URL("app.js", root), "utf8");
+const styles = readFileSync(new URL("styles.css", root), "utf8");
+
+test("页面采用工作台式层级与可见的选中反馈", () => {
+  assert.match(html, /class="brand-mark"/);
+  assert.match(html, /class="intro-section"/);
+  assert.match(html, /class="step-nav"/);
+  assert.match(html, /href="#company"/);
+  assert.match(html, /href="#plans"/);
+  assert.match(html, /href="#people"/);
+  assert.match(html, /href="#results"/);
+  assert.match(html, /id="downloadSection"/);
+  assert.match(app, /downloadButtonBottom/);
+  assert.match(app, /navy:\s*"FFFFFF"/);
+  assert.match(app, /blue:\s*"217346"/);
+  assert.match(app, /line:\s*"D9DEE7"/);
+  assert.match(styles, /\.option-card:has\(input:checked\)/);
+  assert.match(styles, /\.medical-plan:has\(input:checked\)/);
+  assert.match(styles, /\.people-table-wrap\s*\{[^}]*height:/);
+});
 
 test("第一部分只提供全局核心选项，不展开报价方案卡片", () => {
-  const firstSection = html.match(/<section class="card">[\s\S]*?<\/section>/)?.[0] || "";
+  const firstSection = html.match(/<section class="card content-section" id="company">[\s\S]*?<\/section>/)?.[0] || "";
   assert.match(firstSection, /id="pcpDirectBilling"/);
   assert.match(firstSection, /id="coreOptions"/);
   assert.ok(firstSection.indexOf("id=\"coreOptions\"") > firstSection.indexOf("id=\"pcpDirectBilling\""));
