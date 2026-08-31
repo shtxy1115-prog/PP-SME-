@@ -92,12 +92,12 @@ test("自付比例选项：第6次起自付20%，指定就诊不计次数，Medi
   const discounted = core.premiumBreakdown(person, copay, { pcpDirectBilling: false });
   assert.equal(base.baseMedical, 47391);
   assert.equal(discounted.baseMedical, 47391);
-  assert.ok(Math.abs(discounted.discount - 2843.46) < 1e-9);
-  assert.ok(Math.abs(discounted.total - 44547.54) < 1e-9);
+  assert.equal(discounted.discount, 2843);
+  assert.equal(discounted.total, 44548);
   assert.equal(discounted.optional, 0);
   const withOptional = core.premiumBreakdown(person, { ...copay, maternity: "m30" }, { pcpDirectBilling: false });
   assert.equal(withOptional.optional, 4992);
-  assert.ok(Math.abs(withOptional.discount - 2843.46) < 1e-9);
+  assert.equal(withOptional.discount, 2843);
 
   const tob = core.buildTobSheet(copay, 0);
   const tobCopayRow = tob.rows.find(row => String(row[0]).includes("自付比例"));
@@ -114,7 +114,38 @@ test("自付比例选项：第6次起自付20%，指定就诊不计次数，Medi
   const quotationCopayRow = quotationRows.find(row => String(row[0]).includes("自付比例 Policy Co-payment"));
   assert.match(quotationCopayRow[1], /门诊第6次起/);
   const discountRow = quotationRows.find(row => String(row[0]).includes("医疗保费优惠 Medical Discount"));
-  assert.ok(Math.abs(discountRow[1] - 2843.46) < 1e-9);
+  assert.equal(discountRow[1], 2843);
+});
+
+test("FMU 是最高等级既往症选项，且可与自付比例和柏盛 PCP 直付同时选择", () => {
+  const fmu = core.getPreExisting("fmu");
+  assert.ok(fmu);
+  assert.match(fmu.label, /11EE以下.*全员.*个人健康告知/);
+  assert.match(fmu.description, /不承担一切既往症/);
+  assert.equal(fmu.medicalDiscountRate, 0.05);
+
+  const selected = variant("selected", "P4WW", {
+    preExisting: "fmu",
+    copay: "outpatient_from_sixth_20",
+  });
+  assert.equal(core.medicalDiscountRate(selected, { pcpDirectBilling: true }), 0.14);
+  const breakdown = core.premiumBreakdown(employee("E40", 40), selected, { pcpDirectBilling: true });
+  assert.equal(breakdown.discount, 6635);
+  assert.equal(breakdown.total, 40756);
+
+  const quotationRows = core.buildWorkbookModel({
+    mode: "compare",
+    people: [employee("E40", 40)],
+    variants: [selected],
+    selectedPlanCodes: ["P4WW"],
+    pcpDirectBilling: true,
+  }).sheets.find(sheet => sheet.name === "报价 Quotation").rows;
+  const paymentRow = quotationRows.find(row => String(row[0]).includes("支付条件 Payment Condition"));
+  assert.match(paymentRow[1], /柏盛 PCP 首诊/);
+  assert.match(paymentRow[1], /急诊除外/);
+  const preExistingRow = quotationRows.find(row => String(row[0]).includes("既往症安排"));
+  assert.match(preExistingRow[1], /FMU/);
+  assert.match(preExistingRow[1], /不承担一切既往症/);
 });
 
 test("儿童 25 岁仍可自动报价，26 岁进入 INELIGIBLE", () => {

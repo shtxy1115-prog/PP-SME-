@@ -66,6 +66,37 @@ const fixedCases = [
       assert.match(quotationText, /医疗保费下调6%/);
     },
   },
+  {
+    name: "FMU/柏盛 PCP 直付/门诊自付可组合且金额取整",
+    check() {
+      const people = [40, 41, 42].map((age, index) => employee(`E${index + 1}`, age));
+      const state = {
+        companyCn: "测试团体",
+        mode: "compare",
+        people,
+        variants: [variant("highest", "P4WW", { preExisting: "fmu", copay: "outpatient_from_sixth_20" })],
+        selectedPlanCodes: ["P4WW"],
+        pcpDirectBilling: true,
+      };
+      const model = core.buildWorkbookModel(state);
+      const quotationRows = model.sheets.find(sheet => sheet.name === "报价 Quotation").rows;
+      const paymentRow = quotationRows.find(row => String(row[0]).includes("支付条件 Payment Condition"));
+      const preExistingRow = quotationRows.find(row => String(row[0]).includes("既往症安排"));
+      const discountRow = quotationRows.find(row => String(row[0]).includes("医疗保费优惠 Medical Discount"));
+      const totalRow = quotationRows.find(row => String(row[0]).includes("最终保费 Total Premium"));
+      assert.match(paymentRow[1], /柏盛 PCP 首诊/);
+      assert.match(paymentRow[1], /急诊除外/);
+      assert.match(preExistingRow[1], /最高等级 FMU/);
+      assert.equal(discountRow[1], 19905);
+      assert.equal(totalRow[1], 122268);
+      assert.equal(Number.isInteger(discountRow[1]), true);
+      assert.equal(Number.isInteger(totalRow[1]), true);
+      const tob = model.sheets.find(sheet => sheet.name === "方案1 TOB");
+      const pecRow = tob.rows.find(row => String(row[0]).includes("一般既往症"));
+      assert.match(pecRow[1], /个人健康告知/);
+      assert.match(pecRow[1], /不承担一切既往症/);
+    },
+  },
 ];
 
 fixedCases.forEach(testCase => { testCase.check(); console.log(`PASS ${testCase.name}`); });

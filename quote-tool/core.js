@@ -101,7 +101,7 @@
     makeBenefit({ benefitId: "ANNUAL_MAXIMUM", section: "core", cnName: "年度最高保额", enName: "Overall Annual Maximum per Insured Person", cnDescription: "所有责任年度赔付限额", enDescription: "All benefits share this annual maximum", baseValues: { P1: "8,000,000元\nCNY 8,000,000", P2: "16,000,000元\nCNY 16,000,000", P3: "16,000,000元\nCNY 16,000,000", P4: "20,000,000元\nCNY 20,000,000" }, sourceRow: 5 }),
     makeBenefit({ benefitId: "COVERAGE_AREA", section: "core", cnName: "保障区域", enName: "Coverage Area", cnDescription: "承保区域按计划定义；全球计划在美国适用网络医疗规则", enDescription: "Coverage area follows the plan; worldwide plans use the US network rule", baseValues: { P1: "中国大陆\nMainland China", P2: "中国大陆和港澳台\nMainland China, Hong Kong, Macao and Taiwan", P3: "全球除美国\nWorldwide excluding US.", P4: "全球\nWorldwide" }, planOverrides: { P4WWE: "全球除美国\nWorldwide excluding US." }, sourceRow: 6 }),
     makeBenefit({ benefitId: "EMERGENCY_TREATMENT", section: "core", cnName: "紧急医疗", enName: "Emergency Treatment", cnDescription: "保障区域以外发生的紧急医疗，在责任范围内提供保障", enDescription: "Emergency treatment outside the coverage area is covered within the insured benefits", baseValues: { P1: "涵盖\nCovered", P2: "涵盖\nCovered", P3: "涵盖\nCovered", P4: "——" }, sourceRow: 7 }),
-    makeBenefit({ benefitId: "DIRECT_BILLING", section: "core", cnName: "直付服务", enName: "Direct Billing Service", baseValues: { P1: "涵盖\nCovered", P2: "涵盖\nCovered", P3: "涵盖\nCovered", P4: "涵盖\nCovered" }, sourceRow: 8 }),
+    makeBenefit({ benefitId: "DIRECT_BILLING", section: "core", cnName: "直付服务", enName: "Direct Billing Service", cnDescription: "需通过柏盛 PCP 首诊方可涵盖直付服务；急诊除外", enDescription: "Direct billing is covered only through a 柏盛 PCP first visit; emergencies are excluded", baseValues: { P1: "涵盖\nCovered", P2: "涵盖\nCovered", P3: "涵盖\nCovered", P4: "涵盖\nCovered" }, sourceRow: 8 }),
     makeBenefit({ benefitId: "PUBLIC_HOSPITAL", section: "hospital", cnName: "公立医院普通部、VIP或特需部", enName: "Public Hospitals general ward, VIP or international department", baseValues: { P1: "0", P2: "0", P3: "0", P4: "0" }, sourceRow: 10 }),
     makeBenefit({ benefitId: "PRIVATE_HOSPITAL", section: "hospital", cnName: "私立医院或诊所（不含昂贵医疗机构）", enName: "Private Hospital or Clinic (excluding High Cost Providers)", baseValues: { P1: "0", P2: "0", P3: "0", P4: "0" }, sourceRow: 11 }),
     makeBenefit({ benefitId: "HIGH_COST_PROVIDERS", section: "hospital", cnName: "昂贵医疗机构", enName: "High Cost Providers", cnDescription: "参见完整昂贵医疗机构列表", enDescription: "See the full List of High Cost Providers", baseValues: { P1: "1", P2: "100%", P3: "0.2", P4: "0" }, planOverrides: { P203: "0" }, sourceRow: 12 }),
@@ -270,6 +270,21 @@
     },
   ]);
 
+  const PRE_EXISTING_OPTIONS = Object.freeze([
+    {
+      code: "standard",
+      label: "标准承保 / Standard",
+      description: "一般既往症按正式福利表执行。\nNon-catastrophic PEC follows the official Benefit Data.",
+      medicalDiscountRate: 0,
+    },
+    {
+      code: "fmu",
+      label: "最高等级 FMU（11EE以下：全员提供个人健康告知；不承担一切既往症；医疗保费下调5%） / Highest-level FMU (below 11EE: full individual health declaration; no PEC; 5% Medical premium discount)",
+      description: "11EE以下：FMU需全员提供个人健康告知，不承担一切既往症。\nBelow 11EE: FMU requires every insured person to provide an individual health declaration; no pre-existing conditions are covered.",
+      medicalDiscountRate: 0.05,
+    },
+  ]);
+
   function getPlan(planOrCode) {
     if (!planOrCode) return null;
     return typeof planOrCode === "string" ? PLAN_BY_CODE.get(planOrCode) || null : PLAN_BY_CODE.get(planOrCode.code) || planOrCode;
@@ -277,6 +292,10 @@
 
   function getCopay(code) {
     return COPAY_OPTIONS.find(option => option.code === (code || "none")) || null;
+  }
+
+  function getPreExisting(code) {
+    return PRE_EXISTING_OPTIONS.find(option => option.code === (code || "standard")) || null;
   }
 
   function personAge(person) {
@@ -355,7 +374,8 @@
 
   function medicalDiscountRate(variant = {}, options = {}) {
     const copay = getCopay(variant.copay || "none");
-    return (variant.preExisting === "fmu" ? 0.05 : 0)
+    const preExisting = getPreExisting(variant.preExisting || "standard");
+    return (preExisting?.medicalDiscountRate || 0)
       + (options.pcpDirectBilling ? 0.03 : 0)
       + (copay?.medicalDiscountRate || 0);
   }
@@ -366,12 +386,13 @@
     const optional = medical.status === QUOTE_STATUSES.AUTO_QUOTABLE || medical.status === QUOTE_STATUSES.MANUAL_RATE
       ? optionalPremiumFor(variant, plan)
       : { premium: 0, pending: false, invalid: false, details: [] };
-    const discount = medical.premium * medicalDiscountRate(variant, state);
+    const discount = Math.round(medical.premium * medicalDiscountRate(variant, state));
+    const total = Math.round(medical.premium - discount + optional.premium);
     return {
       baseMedical: medical.premium,
       discount,
       optional: optional.premium,
-      total: medical.premium - discount + optional.premium,
+      total,
       status: medical.status,
       reason: medical.reason,
       optionalPending: optional.pending,
@@ -481,6 +502,7 @@
       const plan = getPlan(variant.planCode);
       if (!plan) return;
       if (!getCopay(variant.copay || "none")) addMessage(messages, VALIDATION_LEVELS.ERROR, "UNKNOWN_COPAY_OPTION", `${plan.code} 使用了未知自付比例选项 / unknown policy co-payment option.`, { variantId: variant.id });
+      if (!getPreExisting(variant.preExisting || "standard")) addMessage(messages, VALIDATION_LEVELS.ERROR, "UNKNOWN_PRE_EXISTING_OPTION", `${plan.code} 使用了未知既往症安排 / unknown pre-existing condition arrangement.`, { variantId: variant.id });
       Object.keys(OPTIONAL_SECTION_TYPES).forEach(type => {
         const code = variant[type] || "none";
         if (code === "none") return;
@@ -557,6 +579,10 @@
     return getCopay(variant?.copay || "none") || COPAY_OPTIONS[0];
   }
 
+  function selectedPreExisting(variant) {
+    return getPreExisting(variant?.preExisting || "standard") || PRE_EXISTING_OPTIONS[0];
+  }
+
   function isOptionalSelected(variant, item) {
     const type = item.section;
     return (variant?.[type] || "none") !== "none";
@@ -567,7 +593,7 @@
     const rows = [
       [`${variantLabel(variant, index)}\nTable of Benefits`],
       ["Plan / 计划", plan ? `${plan.code} · ${plan.name}${plan.option ? ` ${plan.option}` : ""}` : "未知 Plan", "区域 / Area", plan?.area || ""],
-      ["所选可选福利 / Selected Options", `自付比例：${selectedCopay(variant).label}\n生育：${selectedOptionLabel(variant, "maternity")}\n体检：${selectedOptionLabel(variant, "wellness")}\n牙科：${selectedOptionLabel(variant, "dental")}\n眼科：${selectedOptionLabel(variant, "vision")}`, "Source", SOURCE_WORKBOOK],
+      ["所选可选福利 / Selected Options", `既往症：${selectedPreExisting(variant).label}\n自付比例：${selectedCopay(variant).label}\n生育：${selectedOptionLabel(variant, "maternity")}\n体检：${selectedOptionLabel(variant, "wellness")}\n牙科：${selectedOptionLabel(variant, "dental")}\n眼科：${selectedOptionLabel(variant, "vision")}`, "Source", SOURCE_WORKBOOK],
       ["福利责任 Benefit", "赔付限额/责任 Coverage and Limit", "共享责任组 Shared Group", "来源 Source"],
     ];
     const rowStyles = ["title", "meta", "meta", "header"];
@@ -583,6 +609,7 @@
         ? item.planValues[plan?.code] ?? null
         : "未选择 / Not selected";
       if (item.benefitId === "POLICY_COPAY") coverage = selectedCopay(variant).coverage;
+      if (item.benefitId === "NON_CATASTROPHIC_PEC" && variant.preExisting === "fmu") coverage = selectedPreExisting(variant).description;
       if (coverage === null) {
         coverage = item.sharedGroup
           ? "与共享责任组共用同一限额；本行不重复计入\nShared limit; not duplicated on this row"
@@ -601,8 +628,9 @@
       ["团体中文名称 Company Name (Chinese)", state.companyCn || ""],
       ["团体英文名称 Company Name (English)", state.companyEn || ""],
       ["保障期限 Policy Period", `${state.startDate || ""} 至 / to ${state.endDate || ""}`],
-      ["支付条件 Payment Condition", state.pcpDirectBilling ? "PCP 首诊直付服务（急诊除外）；医疗保费下调3%\nPCP direct billing; 3% medical discount" : "未选择 PCP 首诊直付服务\nPCP direct billing not selected"],
+      ["支付条件 Payment Condition", state.pcpDirectBilling ? "需通过柏盛 PCP 首诊方可涵盖直付服务（急诊除外）；医疗保费下调3%\nDirect billing is covered only through a 柏盛 PCP first visit; emergencies are excluded; 3% Medical premium discount" : "未选择柏盛 PCP 首诊直付服务\n柏盛 PCP direct billing not selected"],
       ["自付比例 Policy Co-payment", ...variants.map(variant => selectedCopay(variant).label)],
+      ["既往症安排 Pre-existing Conditions", ...variants.map(variant => selectedPreExisting(variant).label)],
       ["报价模式 Quotation Mode", state.mode === "compare" ? "同一批人员多方案比价 / Compare" : "按人员分配不同方案 / Group"],
       ["保费汇总 Premium Summary", ...variants.map(variantLabel)],
       ["参保人数 Insured Members", ...variants.map(variant => `${membersForVariant(state, variant).length} 人 / members`)],
@@ -613,7 +641,7 @@
       ["人员保费明细 Member Premium Details", ...variants.map(variant => `${variant.planCode} · ${variant.name || "未命名方案"}`)],
       ["序号 No.", "姓名/编号 Name", "人员类型 Type", "年龄 Age", ...variants.flatMap(variant => [`${variant.planCode}\n状态 / Status`, `${variant.planCode}\n人工医疗费率 / Manual Rate`, `${variant.planCode}\n个人最终保费 / Individual Total`])],
     ];
-    const rowStyles = ["title", "meta", "meta", "meta", "meta", "meta", "meta", "meta", "section", "body", "body", "body", "body", "header", "section", "header"];
+    const rowStyles = ["title", "meta", "meta", "meta", "meta", "meta", "meta", "meta", "meta", "section", "body", "body", "body", "body", "header", "section", "header"];
     const typeLabel = { employee: "员工\nEmployee", spouse: "配偶\nSpouse", child: "子女\nChild" };
     state.people.forEach((person, index) => {
       const cells = [index + 1, person.name || person.id || "", typeLabel[person.type] || person.type || "", personAge(person) ?? ""];
@@ -627,7 +655,7 @@
       rows.push(cells);
       rowStyles.push("body");
     });
-    const widths = [8, 24, 18, 10, ...variants.flatMap(() => [27, 22, 24])];
+    const widths = [8, 28, 18, 10, ...variants.flatMap(() => [29, 22, 24])];
     return { name: "报价 Quotation", rows, rowStyles, widths, merges: [`A1:${columnName(widths.length - 1)}1`] };
   }
 
@@ -638,9 +666,10 @@
       ["计划 / Plan", ...variants.map(variantLabel)],
       ["区域 / Area", ...variants.map(variant => getPlan(variant.planCode)?.area || "")],
       ["费率列 / Rate Column", ...variants.map(variant => getPlan(variant.planCode)?.rateColumn || "—")],
+      ["方案条件 / Selected Conditions", ...variants.map(variant => `既往症：${selectedPreExisting(variant).label}\n自付比例：${selectedCopay(variant).label}\n柏盛 PCP 直付：${state.pcpDirectBilling ? "已选择（急诊除外）" : "未选择"}`)],
       ["年龄段 / Age Band", ...variants.map(variant => `${variant.planCode}\n每人医疗费率 / Medical Rate`)],
     ];
-    const rowStyles = ["title", "meta", "header", "meta", "meta", "header"];
+    const rowStyles = ["title", "meta", "header", "meta", "meta", "section", "header"];
     RATE_BANDS.forEach(band => {
       rows.push([band.label, ...variants.map(variant => {
         const plan = getPlan(variant.planCode);
@@ -677,6 +706,9 @@
       "员工≤5人最多1个唯一Plan；员工>5人最多2个唯一Plan。重复同一Plan的变体不重复计数。\nGroup mode allows at most 1 unique Plan for up to 5 employees and 2 for more than 5; repeated variants of one Plan count once.",
       "Compare模式使用同一批人员跨所有变体比较，不按员工人数限制Plan数量。\nCompare mode uses the same people across variants and does not impose the Group Plan-count limit.",
       "核保状态：AUTO_QUOTABLE、MANUAL_RATE、PENDING_UW、INELIGIBLE；待人工费率不计入自动医疗总保费，也不以0冒充。\nQuote statuses are AUTO_QUOTABLE, MANUAL_RATE, PENDING_UW and INELIGIBLE; pending rates are excluded from automatic medical totals and never represented as a silent zero.",
+      "最高等级 FMU：11EE以下，FMU需全员提供个人健康告知，不承担一切既往症；选择 FMU 时医疗保费下调5%。\nHighest-level FMU: below 11EE, every insured person must provide an individual health declaration; no pre-existing conditions are covered; 5% Medical premium discount.",
+      "柏盛 PCP 首诊直付服务：需通过柏盛 PCP 首诊方可涵盖直付服务，急诊除外；可与门诊第6次起就诊自付20%选项同时选择。\n柏盛 PCP first-visit direct billing: direct billing is covered only through a 柏盛 PCP first visit; emergencies are excluded; it may be selected together with the 20% co-payment from the sixth outpatient visit.",
+      "保费取整：Medical 折扣按对应费率计算后，折扣金额及最终保费按人民币常规四舍五入至整元。\nPremium rounding: after applying the Medical discount rate, the discount and final premium are rounded to the nearest whole CNY.",
       "选择生育需要员工≥5人，且所有已选方案均包含生育；生育3年内不可变更仅作提示，当前无历史数据不执行伪造校验。\nMaternity requires at least 5 employees and inclusion in every selected variant; the three-year rule is warning-only because no policy history is available.",
       "妊娠并发症不与孕产费共享，按福利表独立责任呈现；HCP列表始终完整输出。\nPregnancy complications are independent from maternity childbirth and are rendered from their own source row; the HCP list is always complete.",
     ];
@@ -710,6 +742,7 @@
     PLANS,
     OPTIONALS,
     COPAY_OPTIONS,
+    PRE_EXISTING_OPTIONS,
     BENEFIT_DATA,
     SOURCE_SECTIONS,
     HCP,
@@ -720,6 +753,7 @@
     getPlan,
     getOptional,
     getCopay,
+    getPreExisting,
     personAge,
     rateFor,
     medicalPremiumFor,

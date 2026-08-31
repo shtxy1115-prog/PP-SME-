@@ -294,9 +294,12 @@
         underLabel.className = "option-row";
         appendText(underLabel, "span", "既往症安排");
         const underSelect = document.createElement("select");
-        [["standard", "标准承保 / Standard"], ["fmu", "FMU（医疗保费 -5%）"]].forEach(([value, text]) => { const option = appendText(underSelect, "option", text); option.value = value; option.selected = variant.preExisting === value; });
+        core.PRE_EXISTING_OPTIONS.forEach(preExistingOption => { const option = appendText(underSelect, "option", preExistingOption.label); option.value = preExistingOption.code; option.selected = variant.preExisting === preExistingOption.code; });
         underSelect.addEventListener("change", () => { variant.preExisting = underSelect.value; saveState(); update(); });
-        underLabel.append(underSelect); panel.append(underLabel);
+        underLabel.append(underSelect);
+        const selectedPreExisting = core.getPreExisting(variant.preExisting) || core.PRE_EXISTING_OPTIONS[0];
+        appendText(underLabel, "small", selectedPreExisting.description, "option-price");
+        panel.append(underLabel);
         const copayLabel = document.createElement("label");
         copayLabel.className = "option-row";
         appendText(copayLabel, "span", "自付比例");
@@ -310,6 +313,7 @@
         copayLabel.append(copaySelect);
         const selectedCopay = core.getCopay(variant.copay) || core.COPAY_OPTIONS[0];
         appendText(copayLabel, "small", selectedCopay.description, "option-price");
+        appendText(copayLabel, "small", "可与柏盛 PCP 首诊直付服务同时选择（急诊除外）。 / Can be combined with 柏盛 PCP first-visit direct billing (emergencies excluded).", "option-price");
         panel.append(copayLabel);
         OPTIONAL_TYPES.forEach(type => {
           const row = document.createElement("label");
@@ -439,17 +443,155 @@
     return Math.min(360, Math.max(22, 16 * lines + 8));
   }
 
+  const WORKBOOK_COLORS = Object.freeze({
+    navy: "173C79",
+    blue: "1E4C91",
+    ink: "17233D",
+    muted: "68738A",
+    line: "D8E1EE",
+    white: "FFFFFF",
+    soft: "F6F9FD",
+    header: "DFEAF8",
+    section: "EEF4FB",
+    total: "E8F5EE",
+    totalInk: "20684B",
+    discount: "FFF5DE",
+    discountInk: "9A5D00",
+  });
+  const THIN_BORDER = Object.freeze({ style: "thin", color: { rgb: WORKBOOK_COLORS.line } });
+  const BODY_BORDER = Object.freeze({ bottom: THIN_BORDER });
+  const GRID_BORDER = Object.freeze({ top: THIN_BORDER, bottom: THIN_BORDER, left: THIN_BORDER, right: THIN_BORDER });
+  const CURRENCY_FORMAT = '¥#,##0;[Red]-¥#,##0;-';
+  const INTEGER_FORMAT = '#,##0;[Red]-#,##0;-';
+
+  function workbookRowKind(sheet, rowIndex) {
+    const declared = sheet.rowStyles?.[rowIndex] || "body";
+    const label = String(sheet.rows?.[rowIndex]?.[0] ?? "");
+    if (rowIndex === 0 || declared === "title") return "title";
+    if (/最终保费|Total Premium/.test(label)) return "total";
+    if (/医疗保费优惠|Medical Discount/.test(label)) return "discount";
+    return declared;
+  }
+
+  function isCurrencyCell(sheet, rowIndex, value, columnIndex = 0) {
+    if (typeof value !== "number") return false;
+    const label = String(sheet.rows?.[rowIndex]?.[0] ?? "");
+    if (sheet.name === "费率 Premium" && rowIndex >= 7) return true;
+    if (sheet.name === "报价 Quotation" && rowIndex >= 16 && columnIndex >= 5 && (columnIndex - 5) % 3 === 0) return true;
+    return /保费|Premium|费率|Rate|优惠|Discount|总额|Total/.test(label);
+  }
+
   function applyWorkbookLayout(worksheet, sheet) {
     worksheet["!merges"] = (sheet.merges || []).map(ref => XLSX.utils.decode_range(ref));
     worksheet["!cols"] = (sheet.widths || []).map(width => ({ wch: width }));
-    worksheet["!rows"] = sheet.rows.map(row => ({ hpt: rowHeight(row) }));
-    Object.keys(worksheet).filter(address => address.charAt(0) !== "!").forEach(address => {
-      const cell = worksheet[address];
-      cell.s = { alignment: { vertical: "top", wrapText: true } };
+    worksheet["!rows"] = sheet.rows.map((row, rowIndex) => {
+      const kind = workbookRowKind(sheet, rowIndex);
+      const computed = rowHeight(row);
+      if (kind === "title") return { hpt: 38 };
+      if (kind === "header") return { hpt: Math.min(82, Math.max(42, computed)) };
+      if (kind === "section") return { hpt: Math.min(120, Math.max(28, computed)) };
+      return { hpt: Math.min(170, Math.max(kind === "meta" ? 26 : 28, computed)) };
     });
   }
 
-  function exportExcel() {
+  function columnIndexFromName(name) {
+    return Array.from(name).reduce((value, character) => value * 26 + character.charCodeAt(0) - 64, 0) - 1;
+  }
+
+  function styleIdFor(kind, isLabel, numberFormat) {
+    if (kind === "title") return 1;
+    if (kind === "header") return 2;
+    if (kind === "section") return 3;
+    if (kind === "meta") return isLabel ? 4 : 5;
+    if (kind === "total") return numberFormat === "currency" ? 11 : 10;
+    if (kind === "discount") return numberFormat === "currency" ? 13 : 12;
+    if (numberFormat === "currency") return 9;
+    if (numberFormat === "integer") return 8;
+    return isLabel ? 6 : 7;
+  }
+
+  function buildStylesXml() {
+    const color = value => `FF${value}`;
+    const font = (name, size, bold, rgb) => `<font><name val="${name}"/><sz val="${size}"/>${bold ? "<b/>" : ""}<color rgb="${color(rgb)}"/></font>`;
+    const fill = rgb => {
+      if (rgb === "none") return "<fill><patternFill patternType=\"none\"/></fill>";
+      if (rgb === "gray125") return "<fill><patternFill patternType=\"gray125\"/></fill>";
+      return `<fill><patternFill patternType="solid"><fgColor rgb="${color(rgb)}"/><bgColor indexed="64"/></patternFill></fill>`;
+    };
+    const border = (top = null, bottom = null, left = null, right = null, rgb = WORKBOOK_COLORS.line) => `<border>${top ? `<top style="${top}"><color rgb="${color(rgb)}"/></top>` : "<top/>"}${bottom ? `<bottom style="${bottom}"><color rgb="${color(rgb)}"/></bottom>` : "<bottom/>"}${left ? `<left style="${left}"><color rgb="${color(rgb)}"/></left>` : "<left/>"}${right ? `<right style="${right}"><color rgb="${color(rgb)}"/></right>` : "<right/>"}<diagonal/></border>`;
+    const xf = (fontId, fillId, borderId, numFmtId = 0, horizontal = "left", vertical = "top", applyNumberFormat = false) => `<xf numFmtId="${numFmtId}" fontId="${fontId}" fillId="${fillId}" borderId="${borderId}" xfId="0" applyAlignment="1"${applyNumberFormat ? " applyNumberFormat=\"1\"" : ""}><alignment horizontal="${horizontal}" vertical="${vertical}" wrapText="1"/></xf>`;
+    const fonts = [
+      font("Aptos", 10, false, WORKBOOK_COLORS.ink),
+      font("Aptos Display", 15, true, WORKBOOK_COLORS.white),
+      font("Aptos", 10, true, WORKBOOK_COLORS.navy),
+      font("Aptos", 10, true, WORKBOOK_COLORS.blue),
+      font("Aptos", 10, true, WORKBOOK_COLORS.navy),
+      font("Aptos", 10, false, WORKBOOK_COLORS.ink),
+      font("Aptos", 10, true, WORKBOOK_COLORS.ink),
+      font("Aptos", 10, false, WORKBOOK_COLORS.ink),
+      font("Aptos", 11, true, WORKBOOK_COLORS.totalInk),
+      font("Aptos", 10, true, WORKBOOK_COLORS.discountInk),
+    ].join("");
+    const fills = ["none", "gray125", WORKBOOK_COLORS.navy, WORKBOOK_COLORS.header, WORKBOOK_COLORS.section, WORKBOOK_COLORS.soft, WORKBOOK_COLORS.total, WORKBOOK_COLORS.discount, WORKBOOK_COLORS.white].map(fill).join("");
+    const borders = [
+      border(),
+      border(null, "thin"),
+      border("thin", "thin", "thin", "thin"),
+      border(null, "medium", null, null, WORKBOOK_COLORS.blue),
+      border("thin", "thin"),
+      border("medium", "thin", null, null, WORKBOOK_COLORS.totalInk),
+    ].join("");
+    const cellXfs = [
+      xf(0, 0, 0),
+      xf(1, 2, 3, 0, "left", "center"),
+      xf(2, 3, 2, 0, "center", "center"),
+      xf(3, 4, 4),
+      xf(4, 5, 1),
+      xf(5, 5, 1),
+      xf(6, 8, 1),
+      xf(7, 8, 1),
+      xf(7, 8, 1, 165, "right", "top", true),
+      xf(7, 8, 1, 164, "right", "top", true),
+      xf(8, 6, 5, 0, "left", "top"),
+      xf(8, 6, 5, 164, "right", "top", true),
+      xf(9, 7, 1),
+      xf(9, 7, 1, 164, "right", "top", true),
+    ].join("");
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="${CURRENCY_FORMAT}"/><numFmt numFmtId="165" formatCode="${INTEGER_FORMAT}"/></numFmts><fonts count="10">${fonts}</fonts><fills count="9">${fills}</fills><borders count="6">${borders}</borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${cellXfs.match(/<xf\b/g).length}">${cellXfs}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles><dxfs count="0"/><tableStyles count="0" defaultTableStyle="TableStyleMedium9" defaultPivotStyle="PivotStyleMedium4"/></styleSheet>`;
+  }
+
+  function styleWorksheetXml(xml, sheet) {
+    return xml.replace(/<c\b([^>]*?)(\/?)>/g, (opening, attributes, selfClosing) => {
+      const refMatch = attributes.match(/\br="([A-Z]+)(\d+)"/);
+      if (!refMatch) return opening;
+      const rowIndex = Number(refMatch[2]) - 1;
+      const columnIndex = columnIndexFromName(refMatch[1]);
+      const value = sheet.rows?.[rowIndex]?.[columnIndex];
+      const kind = workbookRowKind(sheet, rowIndex);
+      const numberFormat = isCurrencyCell(sheet, rowIndex, value, columnIndex) ? "currency" : typeof value === "number" ? "integer" : "general";
+      const styleId = styleIdFor(kind, columnIndex === 0, numberFormat);
+      const styledAttributes = /\bs="[^\"]*"/.test(attributes)
+        ? attributes.replace(/\bs="[^\"]*"/, `s="${styleId}"`)
+        : `${attributes} s="${styleId}"`;
+      return `<c${styledAttributes}${selfClosing}>`;
+    });
+  }
+
+  async function styleWorkbookBytes(bytes, model) {
+    if (!window.JSZip) return bytes;
+    const zip = await window.JSZip.loadAsync(bytes);
+    zip.file("xl/styles.xml", buildStylesXml());
+    for (let index = 0; index < model.sheets.length; index += 1) {
+      const path = `xl/worksheets/sheet${index + 1}.xml`;
+      const entry = zip.file(path);
+      if (!entry) continue;
+      const xml = await entry.async("string");
+      zip.file(path, styleWorksheetXml(xml, model.sheets[index]));
+    }
+    return zip.generateAsync({ type: "arraybuffer", compression: "DEFLATE", compressionOptions: { level: 6 } });
+  }
+
+  async function exportExcel() {
     const messages = core.validate(coreState());
     const errors = messages.filter(message => message.level === core.VALIDATION_LEVELS.ERROR);
     if (errors.length) {
@@ -465,7 +607,15 @@
       applyWorkbookLayout(worksheet, sheet);
       XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name.slice(0, 31));
     });
-    const bytes = XLSX.write(workbook, { bookType: "xlsx", type: "array", compression: true, cellStyles: true });
+    const rawBytes = XLSX.write(workbook, { bookType: "xlsx", type: "array", compression: true, cellStyles: true });
+    let bytes;
+    try {
+      bytes = await styleWorkbookBytes(rawBytes, model);
+    } catch (error) {
+      console.error("Unable to apply workbook styling", error);
+      window.alert("报价数据已生成，但 Excel 样式处理失败；请重试导出。业务计算未受影响。");
+      return;
+    }
     const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
