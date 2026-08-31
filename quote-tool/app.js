@@ -272,6 +272,69 @@
     return core.money(option.premiumByPlan[plan.code]);
   }
 
+  function appendCoreConditionRow(panel, labelText, options, selectedCode, onChange, additionalText = "") {
+    const row = document.createElement("label");
+    row.className = "option-row";
+    appendText(row, "span", labelText);
+    const select = document.createElement("select");
+    const resolvedCode = selectedCode || options[0]?.code;
+    options.forEach(item => {
+      const option = appendText(select, "option", item.label);
+      option.value = item.code;
+      option.selected = resolvedCode === item.code;
+    });
+    select.addEventListener("change", () => onChange(select.value));
+    row.append(select);
+    const selected = options.find(item => item.code === resolvedCode) || options[0];
+    if (selected?.description) appendText(row, "small", selected.description, "option-price");
+    if (additionalText) appendText(row, "small", additionalText, "option-price");
+    panel.append(row);
+  }
+
+  function renderCoreConditions() {
+    const root = $("coreConditions");
+    root.replaceChildren();
+    const selections = [];
+    selectedPlans().forEach(plan => {
+      selectedVariantsForPlan(plan.code).forEach(variant => selections.push({ plan, variant }));
+    });
+    if (!selections.length) {
+      appendText(root, "p", "选择医疗计划后，可在此为每个报价方案设置既往症安排和自付比例。", "hint");
+      return;
+    }
+
+    const heading = document.createElement("div");
+    heading.className = "core-conditions-heading";
+    appendText(heading, "strong", "核心报价条件");
+    appendText(heading, "span", "既往症与自付比例按报价方案分别选择；柏盛 PCP 首诊直付为全局条件。", "hint");
+    root.append(heading);
+
+    const grid = document.createElement("div");
+    grid.className = "core-conditions-grid";
+    selections.forEach(({ plan, variant }) => {
+      const panel = document.createElement("div");
+      panel.className = "core-condition-panel";
+      appendText(panel, "h3", `${plan.code} · ${variant.name}`);
+      appendCoreConditionRow(
+        panel,
+        "既往症安排",
+        core.PRE_EXISTING_OPTIONS,
+        variant.preExisting || "standard",
+        value => { variant.preExisting = value; saveState(); update(); },
+      );
+      appendCoreConditionRow(
+        panel,
+        "自付比例",
+        core.COPAY_OPTIONS,
+        variant.copay || "none",
+        value => { variant.copay = value; saveState(); update(); },
+        "可与柏盛 PCP 首诊直付服务同时选择（急诊除外）。 / Can be combined with 柏盛 PCP first-visit direct billing (emergencies excluded).",
+      );
+      grid.append(panel);
+    });
+    root.append(grid);
+  }
+
   function renderOptions() {
     const root = $("benefitOptions");
     root.replaceChildren();
@@ -290,31 +353,6 @@
         nameInput.addEventListener("change", () => { variant.name = nameInput.value.trim() || "未命名方案"; saveState(); update(); });
         nameLabel.append(nameInput);
         panel.append(nameLabel);
-        const underLabel = document.createElement("label");
-        underLabel.className = "option-row";
-        appendText(underLabel, "span", "既往症安排");
-        const underSelect = document.createElement("select");
-        core.PRE_EXISTING_OPTIONS.forEach(preExistingOption => { const option = appendText(underSelect, "option", preExistingOption.label); option.value = preExistingOption.code; option.selected = variant.preExisting === preExistingOption.code; });
-        underSelect.addEventListener("change", () => { variant.preExisting = underSelect.value; saveState(); update(); });
-        underLabel.append(underSelect);
-        const selectedPreExisting = core.getPreExisting(variant.preExisting) || core.PRE_EXISTING_OPTIONS[0];
-        appendText(underLabel, "small", selectedPreExisting.description, "option-price");
-        panel.append(underLabel);
-        const copayLabel = document.createElement("label");
-        copayLabel.className = "option-row";
-        appendText(copayLabel, "span", "自付比例");
-        const copaySelect = document.createElement("select");
-        core.COPAY_OPTIONS.forEach(copayOption => {
-          const option = appendText(copaySelect, "option", copayOption.label);
-          option.value = copayOption.code;
-          option.selected = (variant.copay || "none") === copayOption.code;
-        });
-        copaySelect.addEventListener("change", () => { variant.copay = copaySelect.value; saveState(); update(); });
-        copayLabel.append(copaySelect);
-        const selectedCopay = core.getCopay(variant.copay) || core.COPAY_OPTIONS[0];
-        appendText(copayLabel, "small", selectedCopay.description, "option-price");
-        appendText(copayLabel, "small", "可与柏盛 PCP 首诊直付服务同时选择（急诊除外）。 / Can be combined with 柏盛 PCP first-visit direct billing (emergencies excluded).", "option-price");
-        panel.append(copayLabel);
         OPTIONAL_TYPES.forEach(type => {
           const row = document.createElement("label");
           row.className = "option-row";
@@ -401,6 +439,7 @@
 
   function update() {
     renderMedicalPlans();
+    renderCoreConditions();
     renderOptions();
     renderPeople();
     renderSummary();
