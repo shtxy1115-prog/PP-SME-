@@ -1759,17 +1759,36 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return /保费|Premium|费率|Rate|优惠|Discount|总额|Total/.test(label);
   }
 
+  function applyWorksheetPrintLayout(worksheet, sheet) {
+    const landscape = sheet.name === "报价 Quotation" || sheet.name === "费率 Premium" || / TOB$/.test(sheet.name);
+    worksheet["!margins"] = {
+      left: 0.25,
+      right: 0.25,
+      top: 0.4,
+      bottom: 0.4,
+      header: 0.2,
+      footer: 0.2,
+    };
+    worksheet["!pageSetup"] = {
+      paperSize: 9,
+      orientation: landscape ? "landscape" : "portrait",
+      fitToWidth: 1,
+      fitToHeight: 0,
+    };
+  }
+
   function applyWorkbookLayout(worksheet, sheet) {
     worksheet["!merges"] = (sheet.merges || []).map(ref => XLSX.utils.decode_range(ref));
     worksheet["!cols"] = (sheet.widths || []).map(width => ({ wch: width }));
     worksheet["!rows"] = sheet.rows.map((row, rowIndex) => {
       const kind = workbookRowKind(sheet, rowIndex);
       const computed = rowHeight(row, sheet, rowIndex);
-      if (kind === "title") return { hpt: 38 };
+      if (kind === "title") return { hpt: sheet.name.includes("TOB") ? Math.min(72, Math.max(56, computed)) : 38 };
       if (kind === "header") return { hpt: Math.min(82, Math.max(42, computed)) };
       if (kind === "section") return { hpt: Math.min(120, Math.max(28, computed)) };
       return { hpt: Math.min(170, Math.max(kind === "meta" ? 26 : 28, computed)) };
     });
+    applyWorksheetPrintLayout(worksheet, sheet);
   }
 
   function columnIndexFromName(name) {
@@ -1838,8 +1857,36 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="${CURRENCY_FORMAT}"/><numFmt numFmtId="165" formatCode="${INTEGER_FORMAT}"/></numFmts><fonts count="10">${fonts}</fonts><fills count="9">${fills}</fills><borders count="6">${borders}</borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${cellXfs.match(/<xf\b/g).length}">${cellXfs}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles><dxfs count="0"/><tableStyles count="0" defaultTableStyle="TableStyleMedium9" defaultPivotStyle="PivotStyleMedium4"/></styleSheet>`;
   }
 
+  function applyWorksheetPrintXml(xml, sheet) {
+    const landscape = sheet.name === "报价 Quotation" || sheet.name === "费率 Premium" || / TOB$/.test(sheet.name);
+    const orientation = landscape ? "landscape" : "portrait";
+    const pageMargins = `<pageMargins left="0.25" right="0.25" top="0.4" bottom="0.4" header="0.2" footer="0.2"/>`;
+    const pageSetup = `<pageSetup orientation="${orientation}" fitToWidth="1" fitToHeight="0" paperSize="9"/>`;
+    const pageSetupProperties = `<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>`;
+    let styled = xml;
+    if (/<sheetPr\b[\s\S]*?<\/sheetPr>/.test(styled)) {
+      styled = styled.replace(/<sheetPr\b[\s\S]*?<\/sheetPr>/, pageSetupProperties);
+    } else {
+      styled = styled.replace(/(<worksheet\b[^>]*>)/, `$1${pageSetupProperties}`);
+    }
+    if (/<pageMargins\b[^>]*\/>/.test(styled)) {
+      styled = styled.replace(/<pageMargins\b[^>]*\/>/, pageMargins);
+    } else if (/<pageSetup\b[^>]*\/>/.test(styled)) {
+      styled = styled.replace(/(<pageSetup\b[^>]*\/>)/, `${pageMargins}$1`);
+    } else {
+      styled = styled.replace(/<\/worksheet>/, `${pageMargins}${pageSetup}</worksheet>`);
+      return styled;
+    }
+    if (/<pageSetup\b[^>]*\/>/.test(styled)) {
+      styled = styled.replace(/<pageSetup\b[^>]*\/>/, pageSetup);
+    } else {
+      styled = styled.replace(/<\/worksheet>/, `${pageSetup}</worksheet>`);
+    }
+    return styled;
+  }
+
   function styleWorksheetXml(xml, sheet) {
-    return xml.replace(/<c\b([^>]*?)(\/?)>/g, (opening, attributes, selfClosing) => {
+    const styled = xml.replace(/<c\b([^>]*?)(\/?)>/g, (opening, attributes, selfClosing) => {
       const refMatch = attributes.match(/\br="([A-Z]+)(\d+)"/);
       if (!refMatch) return opening;
       const rowIndex = Number(refMatch[2]) - 1;
@@ -1853,6 +1900,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         : `${attributes} s="${styleId}"`;
       return `<c${styledAttributes}${selfClosing}>`;
     });
+    return applyWorksheetPrintXml(styled, sheet);
   }
 
   async function styleWorkbookBytes(bytes, model) {

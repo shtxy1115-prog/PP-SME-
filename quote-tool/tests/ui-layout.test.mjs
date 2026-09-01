@@ -65,3 +65,23 @@ test("第二部分不再重复渲染既往症和自付比例控件", () => {
   assert.doesNotMatch(renderOptions, /core\.PRE_EXISTING_OPTIONS/);
   assert.doesNotMatch(renderOptions, /core\.COPAY_OPTIONS/);
 });
+
+test("Excel 导出设置页面适配，避免 Quotation/Premium 横向分页", () => {
+  assert.match(app, /function applyWorksheetPrintLayout\(worksheet, sheet\)/);
+  assert.match(app, /fitToWidth:\s*1/);
+  assert.match(app, /fitToPage\s*=\s*\"1\"/);
+  assert.match(app, /landscape/);
+  assert.match(app, /left:\s*0\.25/);
+  assert.match(app, /sheet\.name\.includes\("TOB"\)/);
+  assert.match(app, /Math\.max\(56, computed\)/);
+
+  const helperStart = app.indexOf("function applyWorksheetPrintXml");
+  const helperEnd = app.indexOf("function styleWorksheetXml", helperStart);
+  const applyWorksheetPrintXml = new Function(`${app.slice(helperStart, helperEnd)}; return applyWorksheetPrintXml;`)();
+  const baseXml = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:D1"/><sheetData/></worksheet>';
+  const quotationXml = applyWorksheetPrintXml(baseXml, { name: "报价 Quotation" });
+  assert.match(quotationXml, /<sheetPr><pageSetUpPr fitToPage="1"\/><\/sheetPr>/);
+  assert.match(quotationXml, /<pageMargins left="0\.25"[^>]*\/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0" paperSize="9"\/>/);
+  const listXml = applyWorksheetPrintXml(baseXml, { name: "昂贵医院 List of HCPs" });
+  assert.match(listXml, /<pageSetup orientation="portrait" fitToWidth="1" fitToHeight="0" paperSize="9"\/>/);
+});
