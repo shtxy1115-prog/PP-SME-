@@ -53,6 +53,12 @@ const fixedCases = [
       const premium = model.sheets.find(sheet => sheet.name === "费率 Premium");
       assert.equal(premium.rows[1].length, 2);
       assert.match(premium.rows[1][1], /费率工作表 \/ Rate Sheet：Quotation/);
+      assert.deepEqual(premium.rows.find(row => String(row[0]).includes("年龄段 / Age Band")), [
+        "年龄段 / Age Band",
+        "P201\n调整后每人医疗费率 / Adjusted Medical Rate",
+        "源费率 / Source Medical Rate",
+      ]);
+      assert.deepEqual(premium.rows.find(row => row[0] === "30-34"), ["30-34", 10840, 11532]);
       const preauth = model.sheets.find(sheet => sheet.name === "预授权 Pre-auth");
       assert.equal(preauth.rows[1][0], "说明 / Overview");
       assert.match(preauth.rows[1][1], /至少两个工作日/);
@@ -99,8 +105,8 @@ const fixedCases = [
       assert.match(paymentRow.join("\n"), /柏盛 PCP 首诊/);
       assert.match(paymentRow.join("\n"), /急诊除外/);
       assert.match(preExistingRow.join("\n"), /最高等级 FMU/);
-      assert.equal(discountRow[1], 19905);
-      assert.equal(totalRow[1], 122268);
+      assert.equal(discountRow[1], 24168);
+      assert.equal(totalRow[1], 118005);
       assert.equal(Number.isInteger(discountRow[1]), true);
       assert.equal(Number.isInteger(totalRow[1]), true);
       const tob = model.sheets.find(sheet => sheet.name === "方案1 TOB");

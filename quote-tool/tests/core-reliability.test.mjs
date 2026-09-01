@@ -86,7 +86,8 @@ test("自付比例选项：第6次起自付20%，指定就诊不计次数，Medi
   assert.match(copayOption.description, /PCP.*互联网问诊.*慢病送药/);
   assert.equal(core.medicalDiscountRate(standard, { pcpDirectBilling: false }), 0);
   assert.equal(core.medicalDiscountRate(copay, { pcpDirectBilling: false }), 0.06);
-  assert.equal(core.medicalDiscountRate(copay, { pcpDirectBilling: true }), 0.09);
+  assert.equal(core.medicalDiscountRate(standard, { pcpDirectBilling: true }), 0.06);
+  assert.equal(core.medicalDiscountRate(copay, { pcpDirectBilling: true }), 0.12);
 
   const base = core.premiumBreakdown(person, standard, { pcpDirectBilling: false });
   const discounted = core.premiumBreakdown(person, copay, { pcpDirectBilling: false });
@@ -117,6 +118,30 @@ test("自付比例选项：第6次起自付20%，指定就诊不计次数，Medi
   assert.equal(discountRow[1], 2843);
 });
 
+test("费率 Premium 按已选 Medical 折扣显示调整后费率，并保留源费率", () => {
+  const selected = variant("selected", "P4WW", {
+    copay: "outpatient_from_sixth_20",
+  });
+  const model = core.buildWorkbookModel({
+    mode: "compare",
+    people: [employee("E40", 40)],
+    variants: [selected],
+    selectedPlanCodes: ["P4WW"],
+    pcpDirectBilling: true,
+  });
+  const premium = model.sheets.find(sheet => sheet.name === "费率 Premium");
+  const rateHeader = premium.rows.find(row => String(row[0]).includes("年龄段 / Age Band"));
+  const rateRow = premium.rows.find(row => row[0] === "40-44");
+
+  assert.deepEqual(rateHeader, [
+    "年龄段 / Age Band",
+    "P4WW\n调整后每人医疗费率 / Adjusted Medical Rate",
+    "源费率 / Source Medical Rate",
+  ]);
+  assert.deepEqual(rateRow, ["40-44", 41704, 47391]);
+  assert.match(premium.rows.find(row => String(row[0]).includes("方案条件"))[2], /医疗费率调整/);
+});
+
 test("FMU 是最高等级既往症选项，且可与自付比例和柏盛 PCP 直付同时选择", () => {
   const fmu = core.getPreExisting("fmu");
   assert.ok(fmu);
@@ -128,10 +153,10 @@ test("FMU 是最高等级既往症选项，且可与自付比例和柏盛 PCP �
     preExisting: "fmu",
     copay: "outpatient_from_sixth_20",
   });
-  assert.equal(core.medicalDiscountRate(selected, { pcpDirectBilling: true }), 0.14);
+  assert.equal(Number(core.medicalDiscountRate(selected, { pcpDirectBilling: true }).toFixed(2)), 0.17);
   const breakdown = core.premiumBreakdown(employee("E40", 40), selected, { pcpDirectBilling: true });
-  assert.equal(breakdown.discount, 6635);
-  assert.equal(breakdown.total, 40756);
+  assert.equal(breakdown.discount, 8056);
+  assert.equal(breakdown.total, 39335);
 
   const quotationRows = core.buildWorkbookModel({
     mode: "compare",
@@ -244,13 +269,14 @@ test("报价 Excel 采用纵向四列布局，不把多个方案横向塞在同�
   assert.equal(quotation.rows.filter(row => String(row[0]).includes("人员保费明细")).length, 2);
 
   const premium = model.sheets.find(sheet => sheet.name === "费率 Premium");
-  assert.equal(premium.widths.length, 2);
-  assert.equal(premium.rows.every(row => row.length <= 2), true);
+  assert.equal(premium.widths.length, 3);
+  assert.equal(premium.rows.every(row => row.length <= 3), true);
   assert.equal(premium.rows.filter(row => String(row[0]).includes("计划 / Plan")).length, 2);
-  assert.ok(premium.widths[1] >= 80);
+  assert.deepEqual(premium.widths, [28, 64, 48]);
+  assert.equal(premium.merges.includes("A1:C1"), true);
+  assert.equal(premium.merges.includes("B2:C2"), true);
 
   const tob = model.sheets.find(sheet => sheet.name === "方案1 TOB");
   assert.deepEqual(quotation.widths, [34, 44, 22, 30]);
-  assert.deepEqual(premium.widths, [28, 92]);
   assert.deepEqual(tob.widths, [34, 44, 22, 24]);
 });

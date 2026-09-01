@@ -376,8 +376,15 @@
     const copay = getCopay(variant.copay || "none");
     const preExisting = getPreExisting(variant.preExisting || "standard");
     return (preExisting?.medicalDiscountRate || 0)
-      + (options.pcpDirectBilling ? 0.03 : 0)
+      + (options.pcpDirectBilling ? 0.06 : 0)
       + (copay?.medicalDiscountRate || 0);
+  }
+
+  function adjustedMedicalRateFor(rate, variant = {}, options = {}) {
+    if (rate === null || rate === undefined || !Number.isFinite(Number(rate))) return null;
+    const sourceRate = Number(rate);
+    const discount = Math.round(sourceRate * medicalDiscountRate(variant, options));
+    return Math.round(sourceRate - discount);
   }
 
   function premiumBreakdown(person, variant, state = {}) {
@@ -632,7 +639,7 @@
       ["来源 / Source", "Core Reliability v4 · Source: " + SOURCE_WORKBOOK, "", ""],
       ["团体中文名称 Company Name (Chinese)", state.companyCn || "", "团体英文名称 Company Name (English)", state.companyEn || ""],
       ["保障期限 Policy Period", `${state.startDate || ""} 至 / to ${state.endDate || ""}`, "报价模式 Quotation Mode", quotationMode],
-      ["支付条件 Payment Condition", state.pcpDirectBilling ? "需通过柏盛 PCP 首诊方可涵盖直付服务（急诊除外）；医疗保费下调3%\nDirect billing is covered only through a 柏盛 PCP first visit; emergencies are excluded; 3% Medical premium discount" : "未选择柏盛 PCP 首诊直付服务\n柏盛 PCP direct billing not selected", "参保人数 Insured Members", `${people.length} 人 / members`],
+      ["支付条件 Payment Condition", state.pcpDirectBilling ? "需通过柏盛 PCP 首诊方可涵盖直付服务（急诊除外）；医疗保费下调6%\nDirect billing is covered only through a 柏盛 PCP first visit; emergencies are excluded; 6% Medical premium discount" : "未选择柏盛 PCP 首诊直付服务\n柏盛 PCP direct billing not selected", "参保人数 Insured Members", `${people.length} 人 / members`],
       ["自付比例 Policy Co-payment", copaySummary, "既往症安排 Pre-existing Conditions", preExistingSummary],
       ["报价方案 / Quotation Plans", `${variants.length} 个方案 / plan${variants.length === 1 ? "" : "s"}`, "", ""],
     ];
@@ -698,28 +705,30 @@
       rowStyles.push("meta");
       rows.push(["费率列 / Rate Column", plan?.rateColumn || "—"]);
       rowStyles.push("meta");
-      rows.push(["方案条件 / Selected Conditions", `既往症：${selectedPreExisting(variant).label}\n自付比例：${selectedCopay(variant).label}\n柏盛 PCP 直付：${state.pcpDirectBilling ? "已选择（急诊除外）" : "未选择"}`]);
+      const discountRate = medicalDiscountRate(variant, state);
+      const discountLabel = discountRate ? `医疗费率调整：下调${Math.round(discountRate * 100)}% / Medical rate adjustment: ${Math.round(discountRate * 100)}% discount` : "医疗费率调整：无 / Medical rate adjustment: none";
+      rows.push(["方案条件 / Selected Conditions", `既往症：${selectedPreExisting(variant).label}\n自付比例：${selectedCopay(variant).label}\n柏盛 PCP 直付：${state.pcpDirectBilling ? "已选择（急诊除外）" : "未选择"}`, discountLabel]);
       rowStyles.push("section");
-      rows.push(["年龄段 / Age Band", `${variant.planCode}\n每人医疗费率 / Medical Rate`]);
+      rows.push(["年龄段 / Age Band", `${variant.planCode}\n调整后每人医疗费率 / Adjusted Medical Rate`, "源费率 / Source Medical Rate"]);
       rowStyles.push("header");
       RATE_BANDS.forEach(band => {
         const rate = rateFor(band.min, plan);
-        rows.push([band.label, rate === null ? "单独核保 / 待人工费率" : rate]);
+        rows.push([band.label, rate === null ? "单独核保 / 待人工费率" : adjustedMedicalRateFor(rate, variant, state), rate === null ? "—" : rate]);
         rowStyles.push("body");
       });
-      rows.push(["70-75*", "单独核保 / 待人工费率"]);
+      rows.push(["70-75*", "单独核保 / 待人工费率", "—"]);
       rowStyles.push("section");
-      rows.push(["可选福利 / Optional Benefits", ["maternity", "wellness", "dental", "vision"].map(type => selectedOptionLabel(variant, type)).join("\n")]);
+      rows.push(["可选福利 / Optional Benefits", ["maternity", "wellness", "dental", "vision"].map(type => selectedOptionLabel(variant, type)).join("\n"), ""]);
       rowStyles.push("section");
       const optional = optionalPremiumFor(variant, plan);
-      rows.push(["可选福利保费 / Optional Premium", optional.pending ? "单独核保 / 待人工费率" : optional.premium]);
+      rows.push(["可选福利保费 / Optional Premium", optional.pending ? "单独核保 / 待人工费率" : optional.premium, ""]);
       rowStyles.push("body");
     });
     if (!variants.length) {
-      rows.push(["提示 / Notice", "选择医疗计划后显示对应费率。"]);
+      rows.push(["提示 / Notice", "选择医疗计划后显示对应费率。", ""]);
       rowStyles.push("section");
     }
-    return { name: "费率 Premium", rows, rowStyles, widths: [28, 92], merges: ["A1:B1"] };
+    return { name: "费率 Premium", rows, rowStyles, widths: [28, 64, 48], merges: ["A1:C1", "B2:C2"] };
   }
 
   function buildListSheet(name, title, values, widths = [8, 110]) {
@@ -791,6 +800,7 @@
     optionalPremiumFor,
     optionalPremium,
     medicalDiscountRate,
+    adjustedMedicalRateFor,
     premiumBreakdown,
     personPremium,
     variantForPerson,
