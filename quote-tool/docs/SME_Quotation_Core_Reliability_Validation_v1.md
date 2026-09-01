@@ -136,7 +136,7 @@
 ## 仍待业务确认 / 不在本轮伪造
 
 1. **生育三年历史规则**：当前没有保单历史输入，系统只给出 `WARNING`，不伪造历史校验结果。
-2. **Excel/WPS 人工打开**：当前环境没有完成 Microsoft Excel/WPS 人工打开、分页和打印效果验收。
+2. **WPS 人工打开**：当前环境尚未完成 WPS 人工打开、分页和打印效果验收；Microsoft Excel 已完成修复版实际打开和关键单元格读取。
 
 ## 2026-09-01 导出分页布局补正
 
@@ -153,6 +153,13 @@
 - 调整后费率与个人报价使用同一套 `medicalDiscountRate` 和整元规则：`源费率 - Math.round(源费率 × Medical 折扣率)`。可选福利保费不进入该 Medical 费率折扣。
 - 示例：P4WW、40–44 岁源费率 47,391；同时选择门诊第 6 次起自付 20%和 PCP 首诊直付时，当前正式规则合计下调 12%，费率页显示调整后 41,704，源费率仍显示 47,391。
 - 本次新增 Premium 费率回归：验证方案条件下的调整比例、调整后数值、源费率保留，以及 XLSX 回读后的三列费率表结构；本次源码与导出模型全套测试为 `17/17` 通过。
+
+## 2026-09-01 XLSX Excel 兼容性修复
+
+- 已复现桌面文件在 Microsoft Excel 中触发恢复提示并显示空白的问题。根因不是数据缺失，而是导出样式处理把 `pageMargins/pageSetup` 放在 `ignoredErrors` 之前，违反 worksheet 子节点顺序；Excel 恢复时会丢弃工作表内容。
+- 已修正导出 XML 顺序：`pageMargins`、`pageSetup` 位于 `ignoredErrors` 及其他尾部节点之前；已有页面适配参数、费率页调整逻辑和样式保留。
+- 新增回归检查，直接验证含 `ignoredErrors` 的 worksheet XML 中页面设置节点顺序；源码、standalone、XLSX 结构和浏览器导出全套测试为 `17/17` 通过。
+- 已使用 Microsoft Excel 独立实例打开 `/Users/doristao/Desktop/PP_Prosper_SME_费率调整测试_2026-09-01_修复版.xlsx`：7 个工作表正常加载，`报价 Quotation` 标题、`费率 Premium` 表头、调整后费率 `10,148` 和源费率 `11,532` 均可读取，未出现空白恢复结果。
 
 ## 最终 P0 判断
 

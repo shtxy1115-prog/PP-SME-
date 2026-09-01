@@ -1879,19 +1879,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     } else {
       styled = styled.replace(/(<worksheet\b[^>]*>)/, `$1${pageSetupProperties}`);
     }
-    if (/<pageMargins\b[^>]*\/>/.test(styled)) {
-      styled = styled.replace(/<pageMargins\b[^>]*\/>/, pageMargins);
-    } else if (/<pageSetup\b[^>]*\/>/.test(styled)) {
-      styled = styled.replace(/(<pageSetup\b[^>]*\/>)/, `${pageMargins}$1`);
-    } else {
-      styled = styled.replace(/<\/worksheet>/, `${pageMargins}${pageSetup}</worksheet>`);
-      return styled;
-    }
-    if (/<pageSetup\b[^>]*\/>/.test(styled)) {
-      styled = styled.replace(/<pageSetup\b[^>]*\/>/, pageSetup);
-    } else {
-      styled = styled.replace(/<\/worksheet>/, `${pageSetup}</worksheet>`);
-    }
+    // Worksheet children follow a schema order. In particular, pageMargins/pageSetup
+    // must be before ignoredErrors; appending them after ignoredErrors makes Excel
+    // enter recovery mode and may discard the visible worksheet content.
+    styled = styled.replace(/<pageMargins\b[^>]*\/>/g, "").replace(/<pageSetup\b[^>]*\/>/g, "");
+    const pageBlock = `${pageMargins}${pageSetup}`;
+    const tailAnchor = /<(?:headerFooter|rowBreaks|colBreaks|customProperties|cellWatches|ignoredErrors|smartTags|drawing|legacyDrawing|legacyDrawingHF|picture|oleObjects|controls|webPublishItems|tableParts|extLst)\b/;
+    if (tailAnchor.test(styled)) styled = styled.replace(tailAnchor, `${pageBlock}$&`);
+    else styled = styled.replace(/<\/worksheet>/, `${pageBlock}</worksheet>`);
     return styled;
   }
 

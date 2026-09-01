@@ -84,4 +84,9 @@ test("Excel 导出设置页面适配，避免 Quotation/Premium 横向分页", (
   assert.match(quotationXml, /<pageMargins left="0\.25"[^>]*\/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0" paperSize="9"\/>/);
   const listXml = applyWorksheetPrintXml(baseXml, { name: "昂贵医院 List of HCPs" });
   assert.match(listXml, /<pageSetup orientation="portrait" fitToWidth="1" fitToHeight="0" paperSize="9"\/>/);
+
+  const xmlWithIgnoredErrors = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:D1"/><sheetData/><ignoredErrors><ignoredError numberStoredAsText="1" sqref="A1:D1"/></ignoredErrors></worksheet>';
+  const orderedXml = applyWorksheetPrintXml(xmlWithIgnoredErrors, { name: "报价 Quotation" });
+  assert.ok(orderedXml.indexOf("<pageMargins") < orderedXml.indexOf("<pageSetup"));
+  assert.ok(orderedXml.indexOf("<pageSetup") < orderedXml.indexOf("<ignoredErrors"));
 });
