@@ -1732,18 +1732,18 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   const WORKBOOK_COLORS = Object.freeze({
-    navy: "FFFFFF",
-    blue: "217346",
-    ink: "222222",
-    muted: "667085",
-    line: "D9DEE7",
+    navy: "143B72",
+    blue: "3966CA",
+    ink: "18324A",
+    muted: "5D7185",
+    line: "D5DFEB",
     white: "FFFFFF",
-    soft: "F8FAFC",
-    header: "F2F4F7",
-    section: "F7F9FB",
-    total: "EAF4EE",
-    totalInk: "217346",
-    discount: "FFF7E6",
+    soft: "F8FAFD",
+    header: "EAF0FC",
+    section: "F3F6FA",
+    total: "E8F6EE",
+    totalInk: "27724A",
+    discount: "FFF8E8",
     discountInk: "8B5B13",
   });
   const THIN_BORDER = Object.freeze({ style: "thin", color: { rgb: WORKBOOK_COLORS.line } });
@@ -1825,11 +1825,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       if (rgb === "gray125") return "<fill><patternFill patternType=\"gray125\"/></fill>";
       return `<fill><patternFill patternType="solid"><fgColor rgb="${color(rgb)}"/><bgColor indexed="64"/></patternFill></fill>`;
     };
-    const border = (top = null, bottom = null, left = null, right = null, rgb = WORKBOOK_COLORS.line) => `<border>${top ? `<top style="${top}"><color rgb="${color(rgb)}"/></top>` : "<top/>"}${bottom ? `<bottom style="${bottom}"><color rgb="${color(rgb)}"/></bottom>` : "<bottom/>"}${left ? `<left style="${left}"><color rgb="${color(rgb)}"/></left>` : "<left/>"}${right ? `<right style="${right}"><color rgb="${color(rgb)}"/></right>` : "<right/>"}<diagonal/></border>`;
+    const border = (top = null, bottom = null, left = null, right = null, rgb = WORKBOOK_COLORS.line) => `<border>${left ? `<left style="${left}"><color rgb="${color(rgb)}"/></left>` : "<left/>"}${right ? `<right style="${right}"><color rgb="${color(rgb)}"/></right>` : "<right/>"}${top ? `<top style="${top}"><color rgb="${color(rgb)}"/></top>` : "<top/>"}${bottom ? `<bottom style="${bottom}"><color rgb="${color(rgb)}"/></bottom>` : "<bottom/>"}<diagonal/></border>`;
     const xf = (fontId, fillId, borderId, numFmtId = 0, horizontal = "left", vertical = "top", applyNumberFormat = false) => `<xf numFmtId="${numFmtId}" fontId="${fontId}" fillId="${fillId}" borderId="${borderId}" xfId="0" applyAlignment="1"${applyNumberFormat ? " applyNumberFormat=\"1\"" : ""}><alignment horizontal="${horizontal}" vertical="${vertical}" wrapText="1"/></xf>`;
     const fonts = [
       font("Aptos", 10, false, WORKBOOK_COLORS.ink),
-      font("Aptos Display", 15, true, WORKBOOK_COLORS.ink),
+      font("Aptos Display", 15, true, WORKBOOK_COLORS.white),
       font("Aptos", 10, true, WORKBOOK_COLORS.blue),
       font("Aptos", 10, true, WORKBOOK_COLORS.blue),
       font("Aptos", 10, true, WORKBOOK_COLORS.blue),
@@ -1878,6 +1878,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       styled = styled.replace(/<sheetPr\b[\s\S]*?<\/sheetPr>/, pageSetupProperties);
     } else {
       styled = styled.replace(/(<worksheet\b[^>]*>)/, `$1${pageSetupProperties}`);
+    }
+    if (/<sheetView\b[^>]*>/.test(styled)) {
+      styled = styled.replace(/<sheetView\b([^>]*?)(\/?)>/, (opening, attributes, selfClosing) => {
+        const cleanedAttributes = attributes.replace(/\s+showGridLines="[^"]*"/g, "");
+        return `<sheetView showGridLines="0"${cleanedAttributes}${selfClosing}>`;
+      });
+    } else {
+      const sheetViews = `<sheetViews><sheetView showGridLines="0" workbookViewId="0"/></sheetViews>`;
+      styled = /<dimension\b[^>]*\/>/.test(styled)
+        ? styled.replace(/(<dimension\b[^>]*\/>)/, `$1${sheetViews}`)
+        : styled.replace(/(<sheetPr\b[\s\S]*?<\/sheetPr>)/, `$1${sheetViews}`);
     }
     // Worksheet children follow a schema order. In particular, pageMargins/pageSetup
     // must be before ignoredErrors; appending them after ignoredErrors makes Excel

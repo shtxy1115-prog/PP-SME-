@@ -17,9 +17,10 @@ test("页面采用工作台式层级与可见的选中反馈", () => {
   assert.match(html, /href="#results"/);
   assert.match(html, /id="downloadSection"/);
   assert.match(app, /downloadButtonBottom/);
-  assert.match(app, /navy:\s*"FFFFFF"/);
-  assert.match(app, /blue:\s*"217346"/);
-  assert.match(app, /line:\s*"D9DEE7"/);
+  assert.match(app, /navy:\s*"143B72"/);
+  assert.match(app, /blue:\s*"3966CA"/);
+  assert.match(app, /ink:\s*"18324A"/);
+  assert.match(app, /line:\s*"D5DFEB"/);
   assert.match(styles, /\.option-card:has\(input:checked\)/);
   assert.match(styles, /\.medical-plan:has\(input:checked\)/);
   assert.match(styles, /\.people-table-wrap\s*\{[^}]*height:/);
@@ -81,6 +82,7 @@ test("Excel 导出设置页面适配，避免 Quotation/Premium 横向分页", (
   const baseXml = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:D1"/><sheetData/></worksheet>';
   const quotationXml = applyWorksheetPrintXml(baseXml, { name: "报价 Quotation" });
   assert.match(quotationXml, /<sheetPr><pageSetUpPr fitToPage="1"\/><\/sheetPr>/);
+  assert.match(quotationXml, /<sheetViews><sheetView showGridLines="0" workbookViewId="0"\/><\/sheetViews>/);
   assert.match(quotationXml, /<pageMargins left="0\.25"[^>]*\/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0" paperSize="9"\/>/);
   const listXml = applyWorksheetPrintXml(baseXml, { name: "昂贵医院 List of HCPs" });
   assert.match(listXml, /<pageSetup orientation="portrait" fitToWidth="1" fitToHeight="0" paperSize="9"\/>/);
@@ -89,4 +91,22 @@ test("Excel 导出设置页面适配，避免 Quotation/Premium 横向分页", (
   const orderedXml = applyWorksheetPrintXml(xmlWithIgnoredErrors, { name: "报价 Quotation" });
   assert.ok(orderedXml.indexOf("<pageMargins") < orderedXml.indexOf("<pageSetup"));
   assert.ok(orderedXml.indexOf("<pageSetup") < orderedXml.indexOf("<ignoredErrors"));
+});
+
+test("Excel 样式边框遵循 OOXML 子节点顺序，避免整份 styles.xml 被删除", () => {
+  const helperStart = app.indexOf("const WORKBOOK_COLORS");
+  const helperEnd = app.indexOf("function applyWorksheetPrintXml", helperStart);
+  const buildStylesXml = new Function(`${app.slice(helperStart, helperEnd)}; return buildStylesXml;`)();
+  const stylesXml = buildStylesXml();
+  assert.match(stylesXml, /<font><name val="Aptos Display"\/><sz val="15"\/><b\/><color rgb="FFFFFFFF"\/><\/font>/);
+  assert.match(stylesXml, /<fill><patternFill patternType="solid"><fgColor rgb="FF143B72"/);
+  const bordersXml = stylesXml.match(/<borders\b[^>]*>([\s\S]*?)<\/borders>/)?.[1] || "";
+  const borders = Array.from(bordersXml.matchAll(/<border>([\s\S]*?)<\/border>/g), match => match[1]);
+
+  assert.ok(borders.length > 0);
+  borders.forEach((borderXml, index) => {
+    const childPositions = ["left", "right", "top", "bottom", "diagonal"].map(tag => borderXml.indexOf(`<${tag}`));
+    assert.ok(childPositions.every(position => position >= 0), `border ${index} 缺少标准子节点`);
+    assert.deepEqual(childPositions, [...childPositions].sort((left, right) => left - right), `border ${index} 子节点顺序无效`);
+  });
 });
