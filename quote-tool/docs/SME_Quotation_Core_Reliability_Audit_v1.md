@@ -90,6 +90,8 @@
 
 2026-08-31：在后续业务规则补充中，增加 FMU、柏盛 PCP 首诊直付和门诊第 6 次起自付 20%选项，并按个人费率对 Medical 折扣取整；同时对用户提供的报价表另存美化版。该后续变更不改变原始费率、计划组合或报价器其他业务范围。
 
-2026-09-01：确认 `费率 Premium` 页未同步显示已选 Medical 折扣；修正为主列输出调整后每人医疗费率，并保留正式源费率对照列。另按业务方最新明确规则将柏盛 PCP 首诊直付的 Medical 折扣更正为 6%。该修正复用既有 `medicalDiscountRate` 和整元规则，不改变原始费率、计划组合、TOB 或可选福利费率。
+2026-09-01：确认 `费率 Premium` 页未同步显示已选 Medical 折扣；修正为主列输出调整后每人医疗费率，并保留正式源费率对照列。随后按业务方最新明确规则将柏盛 PCP 首诊直付的 Medical 折扣更正为 3%，FMU 保持 5%，门诊第 6 次起自付 20%保持 6%。该修正复用既有 `medicalDiscountRate` 和整元规则，不改变原始费率、计划组合、TOB 或可选福利费率。
 
-2026-09-01：最终复核确认，单独修正 worksheet 的 `pageMargins/pageSetup` 顺序不足以消除 Excel 恢复提示；旧 `_修复版.xlsx` 仍会失败。Microsoft Excel 恢复日志显示 `/xl/styles.xml` 被删除，最终根因是 border 子节点使用 `top/bottom/left/right/diagonal`，不符合 OOXML 的 `left/right/top/bottom/diagonal` 顺序。现已修正样式 XML，统一 Excel 与页面预览的深蓝/品牌蓝视觉并隐藏网格线；最终文件已在 Microsoft Excel 中无内容修复弹窗打开，7 个工作表、样式、17% Medical 折扣及调整后/源费率均通过验证。
+2026-09-01：最终复核确认，单独修正 worksheet 的 `pageMargins/pageSetup` 顺序不足以消除 Excel 恢复提示；旧 `_修复版.xlsx` 仍会失败。Microsoft Excel 恢复日志显示 `/xl/styles.xml` 被删除，最终根因是 border 子节点使用 `top/bottom/left/right/diagonal`，不符合 OOXML 的 `left/right/top/bottom/diagonal` 顺序。现已修正样式 XML，统一 Excel 与页面预览的深蓝/品牌蓝视觉并隐藏网格线；最终文件已在 Microsoft Excel 中无内容修复弹窗打开，7 个工作表、样式、14% Medical 折扣及调整后/源费率均通过验证。
+
+2026-09-01：业务方正式更正 Medical 折扣：柏盛 PCP 首诊直付（急诊除外）为 3%，最高等级 FMU 为 5%，门诊第 6 次起就诊自付 20%为 6%。已同步计算、页面、报价表、Premium、TOB、Validation 和回归案例；不改变源费率、计划、区域、责任或 Excel 样式。

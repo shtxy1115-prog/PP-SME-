@@ -83,11 +83,12 @@ test("自付比例选项：第6次起自付20%，指定就诊不计次数，Medi
 
   assert.equal(copayOption.code, "outpatient_from_sixth_20");
   assert.match(copayOption.label, /门诊第6次起.*20%/);
+  assert.match(copayOption.label, /医疗保费下调6%/);
   assert.match(copayOption.description, /PCP.*互联网问诊.*慢病送药/);
   assert.equal(core.medicalDiscountRate(standard, { pcpDirectBilling: false }), 0);
   assert.equal(core.medicalDiscountRate(copay, { pcpDirectBilling: false }), 0.06);
-  assert.equal(core.medicalDiscountRate(standard, { pcpDirectBilling: true }), 0.06);
-  assert.equal(core.medicalDiscountRate(copay, { pcpDirectBilling: true }), 0.12);
+  assert.equal(core.medicalDiscountRate(standard, { pcpDirectBilling: true }), 0.03);
+  assert.equal(core.medicalDiscountRate(copay, { pcpDirectBilling: true }), 0.09);
 
   const base = core.premiumBreakdown(person, standard, { pcpDirectBilling: false });
   const discounted = core.premiumBreakdown(person, copay, { pcpDirectBilling: false });
@@ -138,7 +139,7 @@ test("费率 Premium 按已选 Medical 折扣显示调整后费率，并保留�
     "P4WW\n调整后每人医疗费率 / Adjusted Medical Rate",
     "源费率 / Source Medical Rate",
   ]);
-  assert.deepEqual(rateRow, ["40-44", 41704, 47391]);
+  assert.deepEqual(rateRow, ["40-44", 43126, 47391]);
   assert.match(premium.rows.find(row => String(row[0]).includes("方案条件"))[2], /医疗费率调整/);
 });
 
@@ -153,10 +154,10 @@ test("FMU 是最高等级既往症选项，且可与自付比例和柏盛 PCP �
     preExisting: "fmu",
     copay: "outpatient_from_sixth_20",
   });
-  assert.equal(Number(core.medicalDiscountRate(selected, { pcpDirectBilling: true }).toFixed(2)), 0.17);
+  assert.equal(Number(core.medicalDiscountRate(selected, { pcpDirectBilling: true }).toFixed(2)), 0.14);
   const breakdown = core.premiumBreakdown(employee("E40", 40), selected, { pcpDirectBilling: true });
-  assert.equal(breakdown.discount, 8056);
-  assert.equal(breakdown.total, 39335);
+  assert.equal(breakdown.discount, 6635);
+  assert.equal(breakdown.total, 40756);
 
   const quotationRows = core.buildWorkbookModel({
     mode: "compare",
@@ -168,6 +169,7 @@ test("FMU 是最高等级既往症选项，且可与自付比例和柏盛 PCP �
   const paymentRow = quotationRows.find(row => String(row[0]).includes("支付条件 Payment Condition"));
   assert.match(paymentRow.join("\n"), /柏盛 PCP 首诊/);
   assert.match(paymentRow.join("\n"), /急诊除外/);
+  assert.match(paymentRow.join("\n"), /医疗保费下调3%/);
   const preExistingRow = quotationRows.find(row => row.some(cell => String(cell).includes("既往症安排")));
   assert.match(preExistingRow.join("\n"), /FMU/);
   assert.match(preExistingRow.join("\n"), /不承担一切既往症/);

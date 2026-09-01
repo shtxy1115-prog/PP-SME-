@@ -305,7 +305,7 @@ footer { display: flex; justify-content: space-between; gap: 12px; max-width: 13
         </div>
       </div>
       <div class="core-option-stack">
-        <label class="payment-condition option-card core-option-card"><input id="pcpDirectBilling" type="checkbox"> <span><strong>柏盛 PCP 首诊直付服务（急诊除外）</strong><small>需通过柏盛 PCP 首诊方可涵盖直付服务；该选项可与门诊自付比例同时选择，医疗保费下调 6%。</small></span></label>
+        <label class="payment-condition option-card core-option-card"><input id="pcpDirectBilling" type="checkbox"> <span><strong>柏盛 PCP 首诊直付服务（急诊除外）</strong><small>需通过柏盛 PCP 首诊方可涵盖直付服务；该选项可与门诊自付比例同时选择，医疗保费下调 3%。</small></span></label>
         <div id="coreOptions" class="core-options" aria-live="polite"></div>
       </div>
     </section>
@@ -787,7 +787,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const copay = getCopay(variant.copay || "none");
     const preExisting = getPreExisting(variant.preExisting || "standard");
     return (preExisting?.medicalDiscountRate || 0)
-      + (options.pcpDirectBilling ? 0.06 : 0)
+      + (options.pcpDirectBilling ? 0.03 : 0)
       + (copay?.medicalDiscountRate || 0);
   }
 
@@ -1050,7 +1050,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       ["来源 / Source", "Core Reliability v4 · Source: " + SOURCE_WORKBOOK, "", ""],
       ["团体中文名称 Company Name (Chinese)", state.companyCn || "", "团体英文名称 Company Name (English)", state.companyEn || ""],
       ["保障期限 Policy Period", `${state.startDate || ""} 至 / to ${state.endDate || ""}`, "报价模式 Quotation Mode", quotationMode],
-      ["支付条件 Payment Condition", state.pcpDirectBilling ? "需通过柏盛 PCP 首诊方可涵盖直付服务（急诊除外）；医疗保费下调6%\nDirect billing is covered only through a 柏盛 PCP first visit; emergencies are excluded; 6% Medical premium discount" : "未选择柏盛 PCP 首诊直付服务\n柏盛 PCP direct billing not selected", "参保人数 Insured Members", `${people.length} 人 / members`],
+      ["支付条件 Payment Condition", state.pcpDirectBilling ? "需通过柏盛 PCP 首诊方可涵盖直付服务（急诊除外）；医疗保费下调3%\nDirect billing is covered only through a 柏盛 PCP first visit; emergencies are excluded; 3% Medical premium discount" : "未选择柏盛 PCP 首诊直付服务\n柏盛 PCP direct billing not selected", "参保人数 Insured Members", `${people.length} 人 / members`],
       ["自付比例 Policy Co-payment", copaySummary, "既往症安排 Pre-existing Conditions", preExistingSummary],
       ["报价方案 / Quotation Plans", `${variants.length} 个方案 / plan${variants.length === 1 ? "" : "s"}`, "", ""],
     ];

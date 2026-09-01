@@ -59,6 +59,12 @@ test("核心选项统一同步到所有报价变体并持久化", () => {
   assert.match(app, /function applyGlobalCoreOptions\(\)/);
 });
 
+test("PCP 首诊直付选项显示正式的 3% Medical 折扣", () => {
+  const pcpOption = html.match(/id="pcpDirectBilling"[\s\S]*?<\/label>/)?.[0] || "";
+  assert.match(pcpOption, /医疗保费下调 3%/);
+  assert.doesNotMatch(pcpOption, /医疗保费下调 6%/);
+});
+
 test("第二部分不再重复渲染既往症和自付比例控件", () => {
   const renderOptionsStart = app.indexOf("function renderOptions()");
   const renderOptionsEnd = app.indexOf("function addSummaryMetric", renderOptionsStart);

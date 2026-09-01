@@ -104,9 +104,10 @@ const fixedCases = [
       const totalRow = quotationRows.find(row => String(row[0]).includes("最终保费 Total Premium"));
       assert.match(paymentRow.join("\n"), /柏盛 PCP 首诊/);
       assert.match(paymentRow.join("\n"), /急诊除外/);
+      assert.match(paymentRow.join("\n"), /医疗保费下调3%/);
       assert.match(preExistingRow.join("\n"), /最高等级 FMU/);
-      assert.equal(discountRow[1], 24168);
-      assert.equal(totalRow[1], 118005);
+      assert.equal(discountRow[1], 19905);
+      assert.equal(totalRow[1], 122268);
       assert.equal(Number.isInteger(discountRow[1]), true);
       assert.equal(Number.isInteger(totalRow[1]), true);
       const tob = model.sheets.find(sheet => sheet.name === "方案1 TOB");
