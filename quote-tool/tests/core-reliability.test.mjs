@@ -105,6 +105,7 @@ test("自付比例选项：第6次起自付20%，指定就诊不计次数，Medi
   const tobCopayRow = tob.rows.find(row => String(row[0]).includes("自付比例"));
   assert.match(tobCopayRow[1], /门诊第6次起/);
   assert.match(tobCopayRow[1], /PCP.*互联网问诊.*慢病送药/);
+  assert.match(tobCopayRow[1], /A 20% co-payment applies from the 6th outpatient visit; PCP visits, online consultations and chronic medicine delivery do not count toward the outpatient visit count\./);
   const model = core.buildWorkbookModel({
     mode: "compare",
     people: [person],
@@ -143,6 +144,27 @@ test("费率 Premium 按已选 Medical 折扣显示调整后费率，并保留�
   assert.match(premium.rows.find(row => String(row[0]).includes("方案条件"))[2], /医疗费率调整/);
 });
 
+test("PCP 直付使用正式英文，Medical 折扣后按整元向上取整", () => {
+  const selected = variant("pcp", "P4WW", { copay: "outpatient_from_sixth_20" });
+  const person = employee("E10011", 70, { quoteStatus: "MANUAL_RATE", manualMedicalPremium: 10011 });
+  const breakdown = core.premiumBreakdown(person, selected, { pcpDirectBilling: true });
+
+  assert.equal(core.adjustedMedicalRateFor(10011, selected, { pcpDirectBilling: true }), 9111);
+  assert.equal(breakdown.baseMedical, 10011);
+  assert.equal(breakdown.discount, 900);
+  assert.equal(breakdown.total, 9111);
+
+  const quotationRows = core.buildWorkbookModel({
+    mode: "compare",
+    people: [person],
+    variants: [selected],
+    selectedPlanCodes: ["P4WW"],
+    pcpDirectBilling: true,
+  }).sheets.find(sheet => sheet.name === "报价 Quotation").rows;
+  const paymentRow = quotationRows.find(row => String(row[0]).includes("支付条件 Payment Condition"));
+  assert.match(paymentRow.join("\n"), /Direct billing is available following an initial consultation with a Prosper PCP; emergency treatment is exempt from this requirement\./);
+});
+
 test("FMU 是最高等级既往症选项，且可与自付比例和柏盛 PCP 直付同时选择", () => {
   const fmu = core.getPreExisting("fmu");
   assert.ok(fmu);
@@ -156,8 +178,8 @@ test("FMU 是最高等级既往症选项，且可与自付比例和柏盛 PCP �
   });
   assert.equal(Number(core.medicalDiscountRate(selected, { pcpDirectBilling: true }).toFixed(2)), 0.14);
   const breakdown = core.premiumBreakdown(employee("E40", 40), selected, { pcpDirectBilling: true });
-  assert.equal(breakdown.discount, 6635);
-  assert.equal(breakdown.total, 40756);
+  assert.equal(breakdown.discount, 6634);
+  assert.equal(breakdown.total, 40757);
 
   const quotationRows = core.buildWorkbookModel({
     mode: "compare",

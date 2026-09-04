@@ -512,7 +512,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     makeBenefit({ benefitId: "ANNUAL_MAXIMUM", section: "core", cnName: "年度最高保额", enName: "Overall Annual Maximum per Insured Person", cnDescription: "所有责任年度赔付限额", enDescription: "All benefits share this annual maximum", baseValues: { P1: "8,000,000元\nCNY 8,000,000", P2: "16,000,000元\nCNY 16,000,000", P3: "16,000,000元\nCNY 16,000,000", P4: "20,000,000元\nCNY 20,000,000" }, sourceRow: 5 }),
     makeBenefit({ benefitId: "COVERAGE_AREA", section: "core", cnName: "保障区域", enName: "Coverage Area", cnDescription: "承保区域按计划定义；全球计划在美国适用网络医疗规则", enDescription: "Coverage area follows the plan; worldwide plans use the US network rule", baseValues: { P1: "中国大陆\nMainland China", P2: "中国大陆和港澳台\nMainland China, Hong Kong, Macao and Taiwan", P3: "全球除美国\nWorldwide excluding US.", P4: "全球\nWorldwide" }, planOverrides: { P4WWE: "全球除美国\nWorldwide excluding US." }, sourceRow: 6 }),
     makeBenefit({ benefitId: "EMERGENCY_TREATMENT", section: "core", cnName: "紧急医疗", enName: "Emergency Treatment", cnDescription: "保障区域以外发生的紧急医疗，在责任范围内提供保障", enDescription: "Emergency treatment outside the coverage area is covered within the insured benefits", baseValues: { P1: "涵盖\nCovered", P2: "涵盖\nCovered", P3: "涵盖\nCovered", P4: "——" }, sourceRow: 7 }),
-    makeBenefit({ benefitId: "DIRECT_BILLING", section: "core", cnName: "直付服务", enName: "Direct Billing Service", cnDescription: "需通过柏盛 PCP 首诊方可涵盖直付服务；急诊除外", enDescription: "Direct billing is covered only through a 柏盛 PCP first visit; emergencies are excluded", baseValues: { P1: "涵盖\nCovered", P2: "涵盖\nCovered", P3: "涵盖\nCovered", P4: "涵盖\nCovered" }, sourceRow: 8 }),
+    makeBenefit({ benefitId: "DIRECT_BILLING", section: "core", cnName: "直付服务", enName: "Direct Billing Service", cnDescription: "需通过柏盛 PCP 首诊方可涵盖直付服务；急诊除外", enDescription: "Direct billing is available following an initial consultation with a Prosper PCP; emergency treatment is exempt from this requirement.", baseValues: { P1: "涵盖\nCovered", P2: "涵盖\nCovered", P3: "涵盖\nCovered", P4: "涵盖\nCovered" }, sourceRow: 8 }),
     makeBenefit({ benefitId: "PUBLIC_HOSPITAL", section: "hospital", cnName: "公立医院普通部、VIP或特需部", enName: "Public Hospitals general ward, VIP or international department", baseValues: { P1: "0", P2: "0", P3: "0", P4: "0" }, sourceRow: 10 }),
     makeBenefit({ benefitId: "PRIVATE_HOSPITAL", section: "hospital", cnName: "私立医院或诊所（不含昂贵医疗机构）", enName: "Private Hospital or Clinic (excluding High Cost Providers)", baseValues: { P1: "0", P2: "0", P3: "0", P4: "0" }, sourceRow: 11 }),
     makeBenefit({ benefitId: "HIGH_COST_PROVIDERS", section: "hospital", cnName: "昂贵医疗机构", enName: "High Cost Providers", cnDescription: "参见完整昂贵医疗机构列表", enDescription: "See the full List of High Cost Providers", baseValues: { P1: "1", P2: "100%", P3: "0.2", P4: "0" }, planOverrides: { P203: "0" }, sourceRow: 12 }),
@@ -521,7 +521,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     makeBenefit({ benefitId: "WAITING_PERIOD", section: "underwriting", cnName: "等待期", enName: "Waiting period", baseValues: { P1: "无等待期\nNo waiting period", P2: "无等待期\nNo waiting period", P3: "无等待期\nNo waiting period", P4: "无等待期\nNo waiting period" }, sourceRow: 16 }),
     makeBenefit({ benefitId: "ANNUAL_DEDUCTIBLE", section: "deductible", cnName: "年免赔额", enName: "Annual Deductible", baseValues: { P1: "个人年度免赔额：0元\nIndividual Annual Deductible: CNY 0\n\n家庭年度免赔额：0元\nFamily Annual Deductible: CNY 0", P2: "个人年度免赔额：0元\nIndividual Annual Deductible: CNY 0\n\n家庭年度免赔额：0元\nFamily Annual Deductible: CNY 0", P3: "个人年度免赔额：0元\nIndividual Annual Deductible: CNY 0\n\n家庭年度免赔额：0元\nFamily Annual Deductible: CNY 0", P4: "个人年度免赔额：0元\nIndividual Annual Deductible: CNY 0\n\n家庭年度免赔额：0元\nFamily Annual Deductible: CNY 0" }, sourceRow: 18 }),
     makeBenefit({ benefitId: "VISIT_DEDUCTIBLE", section: "deductible", cnName: "次免赔额", enName: "Per Visit Deductible", baseValues: { P1: "0 元\nCNY 0", P2: "0 元\nCNY 0", P3: "0 元\nCNY 0", P4: "0 元\nCNY 0" }, sourceRow: 19 }),
-    makeBenefit({ benefitId: "POLICY_COPAY", section: "deductible", cnName: "自付比例", enName: "Policy Co-payment", cnDescription: "门诊第6次起就诊自付比例20%；通过PCP、互联网问诊、慢病送药不计入门诊次数", enDescription: "20% co-payment from the sixth outpatient visit; PCP, online consultation and chronic medicine delivery do not count", baseValues: { P1: "0", P2: "0", P3: "0", P4: "0" }, sourceRow: 20 }),
+    makeBenefit({ benefitId: "POLICY_COPAY", section: "deductible", cnName: "自付比例", enName: "Policy Co-payment", cnDescription: "门诊第6次起就诊自付比例20%；通过PCP、互联网问诊、慢病送药不计入门诊次数", enDescription: "A 20% co-payment applies from the 6th outpatient visit; PCP visits, online consultations and chronic medicine delivery do not count toward the outpatient visit count.", baseValues: { P1: "0", P2: "0", P3: "0", P4: "0" }, sourceRow: 20 }),
     makeBenefit({ benefitId: "OUT_OF_POCKET_MAXIMUM", section: "deductible", cnName: "自付限额", enName: "Out-of-Pocket Maximum", baseValues: { P1: "无\nNo Maximum", P2: "无\nNo Maximum", P3: "无\nNo Maximum", P4: "无\nNo Maximum" }, sourceRow: 21 }),
     makeBenefit({ benefitId: "INPATIENT_MAXIMUM", section: "inpatient", cnName: "住院医疗责任累计限额", enName: "Annual Inpatient Maximum", baseValues: { P1: "8,000,000元\nCNY 8,000,000", P2: "16,000,000元\nCNY 16,000,000", P3: "16,000,000元\nCNY 16,000,000", P4: "20,000,000元\nCNY 20,000,000" }, sourceRow: 23 }),
     makeBenefit({ benefitId: "PRIVATE_ROOM", section: "inpatient", cnName: "标准单人病房床位费", enName: "Standard private room", baseValues: { P1: "每日限额1,500元\nUp to CNY 1,500 per day", P2: "无单项限额\nFully covered", P3: "无单项限额\nFully covered", P4: "无单项限额\nFully covered" }, sourceRow: 24 }),
@@ -676,7 +676,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       code: "outpatient_from_sixth_20",
       label: "门诊第6次起就诊自付20%（医疗保费下调6%） / 20% co-payment from the 6th outpatient visit (6% Medical premium discount)",
       description: "通过PCP就诊、互联网问诊、慢病送药不计入门诊次数。\nPCP visits, online consultations and chronic medicine delivery do not count toward the outpatient visit count.",
-      coverage: "门诊第6次起就诊自付20%；通过PCP就诊、互联网问诊、慢病送药不计入门诊次数。\n20% co-payment from the 6th outpatient visit; PCP visits, online consultations and chronic medicine delivery do not count toward the outpatient visit count.",
+      coverage: "门诊第6次起就诊自付20%；通过PCP就诊、互联网问诊、慢病送药不计入门诊次数。\nA 20% co-payment applies from the 6th outpatient visit; PCP visits, online consultations and chronic medicine delivery do not count toward the outpatient visit count.",
       medicalDiscountRate: 0.06,
     },
   ]);
@@ -794,8 +794,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function adjustedMedicalRateFor(rate, variant = {}, options = {}) {
     if (rate === null || rate === undefined || !Number.isFinite(Number(rate))) return null;
     const sourceRate = Number(rate);
-    const discount = Math.round(sourceRate * medicalDiscountRate(variant, options));
-    return Math.round(sourceRate - discount);
+    const discountRate = medicalDiscountRate(variant, options);
+    return Math.ceil(Number((sourceRate * (1 - discountRate)).toFixed(10)));
   }
 
   function premiumBreakdown(person, variant, state = {}) {
@@ -804,8 +804,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const optional = medical.status === QUOTE_STATUSES.AUTO_QUOTABLE || medical.status === QUOTE_STATUSES.MANUAL_RATE
       ? optionalPremiumFor(variant, plan)
       : { premium: 0, pending: false, invalid: false, details: [] };
-    const discount = Math.round(medical.premium * medicalDiscountRate(variant, state));
-    const total = Math.round(medical.premium - discount + optional.premium);
+    const hasMedicalPremium = medical.status === QUOTE_STATUSES.AUTO_QUOTABLE || medical.status === QUOTE_STATUSES.MANUAL_RATE;
+    const adjustedMedical = hasMedicalPremium ? adjustedMedicalRateFor(medical.premium, variant, state) : 0;
+    const discount = hasMedicalPremium ? medical.premium - adjustedMedical : 0;
+    const total = hasMedicalPremium ? adjustedMedical + optional.premium : 0;
     return {
       baseMedical: medical.premium,
       discount,
@@ -1050,7 +1052,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       ["来源 / Source", "Core Reliability v4 · Source: " + SOURCE_WORKBOOK, "", ""],
       ["团体中文名称 Company Name (Chinese)", state.companyCn || "", "团体英文名称 Company Name (English)", state.companyEn || ""],
       ["保障期限 Policy Period", `${state.startDate || ""} 至 / to ${state.endDate || ""}`, "报价模式 Quotation Mode", quotationMode],
-      ["支付条件 Payment Condition", state.pcpDirectBilling ? "需通过柏盛 PCP 首诊方可涵盖直付服务（急诊除外）；医疗保费下调3%\nDirect billing is covered only through a 柏盛 PCP first visit; emergencies are excluded; 3% Medical premium discount" : "未选择柏盛 PCP 首诊直付服务\n柏盛 PCP direct billing not selected", "参保人数 Insured Members", `${people.length} 人 / members`],
+      ["支付条件 Payment Condition", state.pcpDirectBilling ? "需通过柏盛 PCP 首诊方可涵盖直付服务（急诊除外）；医疗保费下调3%\nDirect billing is available following an initial consultation with a Prosper PCP; emergency treatment is exempt from this requirement.\nA 3% Medical premium discount applies." : "未选择柏盛 PCP 首诊直付服务\n柏盛 PCP direct billing not selected", "参保人数 Insured Members", `${people.length} 人 / members`],
       ["自付比例 Policy Co-payment", copaySummary, "既往症安排 Pre-existing Conditions", preExistingSummary],
       ["报价方案 / Quotation Plans", `${variants.length} 个方案 / plan${variants.length === 1 ? "" : "s"}`, "", ""],
     ];
@@ -1157,8 +1159,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       "Compare模式使用同一批人员跨所有变体比较，不按员工人数限制Plan数量。\nCompare mode uses the same people across variants and does not impose the Group Plan-count limit.",
       "核保状态：AUTO_QUOTABLE、MANUAL_RATE、PENDING_UW、INELIGIBLE；待人工费率不计入自动医疗总保费，也不以0冒充。\nQuote statuses are AUTO_QUOTABLE, MANUAL_RATE, PENDING_UW and INELIGIBLE; pending rates are excluded from automatic medical totals and never represented as a silent zero.",
       "最高等级 FMU：11EE以下，FMU需全员提供个人健康告知，不承担一切既往症；选择 FMU 时医疗保费下调5%。\nHighest-level FMU: below 11EE, every insured person must provide an individual health declaration; no pre-existing conditions are covered; 5% Medical premium discount.",
-      "柏盛 PCP 首诊直付服务：需通过柏盛 PCP 首诊方可涵盖直付服务，急诊除外；可与门诊第6次起就诊自付20%选项同时选择。\n柏盛 PCP first-visit direct billing: direct billing is covered only through a 柏盛 PCP first visit; emergencies are excluded; it may be selected together with the 20% co-payment from the sixth outpatient visit.",
-      "保费取整：Medical 折扣按对应费率计算后，折扣金额及最终保费按人民币常规四舍五入至整元。\nPremium rounding: after applying the Medical discount rate, the discount and final premium are rounded to the nearest whole CNY.",
+      "柏盛 PCP 首诊直付服务：需通过柏盛 PCP 首诊方可涵盖直付服务，急诊除外；可与门诊第6次起就诊自付20%选项同时选择。\nProsper PCP first-visit direct billing: Direct billing is available following an initial consultation with a Prosper PCP; emergency treatment is exempt from this requirement. It may be selected together with the 20% co-payment from the sixth outpatient visit.",
+      "保费取整：Medical 折扣按对应费率计算后，调整后费率、折扣金额及最终保费均按人民币整元向上取整。\nPremium rounding: after applying the Medical discount rate, the adjusted rate, discount amount and final premium are rounded up to whole CNY.",
       "选择生育需要员工≥5人，且所有已选方案均包含生育；生育3年内不可变更仅作提示，当前无历史数据不执行伪造校验。\nMaternity requires at least 5 employees and inclusion in every selected variant; the three-year rule is warning-only because no policy history is available.",
       "妊娠并发症不与孕产费共享，按福利表独立责任呈现；HCP列表始终完整输出。\nPregnancy complications are independent from maternity childbirth and are rendered from their own source row; the HCP list is always complete.",
     ];
