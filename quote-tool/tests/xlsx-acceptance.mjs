@@ -45,20 +45,23 @@ const fixedCases = [
       assert.equal(core.BENEFIT_DATA.find(item => item.benefitId === "PREGNANCY_COMPLICATIONS").sharedGroup, null);
       const model = core.buildWorkbookModel(state);
       const quotation = model.sheets.find(sheet => sheet.name === "报价 Quotation");
-      assert.equal(quotation.rows[1][0], "来源 / Source");
-      assert.match(quotation.rows[1][1], /Core Reliability v4/);
-      assert.equal(quotation.rows[1].length, 4);
+      assert.equal(quotation.rows[1][0], "团体中文名称 \nCompany Name (Chinese)");
+      assert.equal(quotation.rows[1].length, 8);
       assert.ok(quotation.merges.includes("A1:D1"));
-      assert.ok(quotation.merges.includes("B2:D2"));
+      assert.ok(quotation.merges.includes("B5:D5"));
+      assert.ok(quotation.merges.includes("A10:D10"));
       const premium = model.sheets.find(sheet => sheet.name === "费率 Premium");
-      assert.equal(premium.rows[1].length, 2);
-      assert.match(premium.rows[1][1], /费率工作表 \/ Rate Sheet：Quotation/);
+      assert.equal(premium.rows[1].length, 6);
+      assert.match(premium.rows[1][1], /P201/);
       assert.deepEqual(premium.rows.find(row => String(row[0]).includes("年龄段 / Age Band")), [
         "年龄段 / Age Band",
-        "P201\n调整后每人医疗费率 / Adjusted Medical Rate",
-        "源费率 / Source Medical Rate",
+        "医疗保费/\nMedical Premium",
+        "生育福利保费 / \nMaternity Benefits Premium",
+        "体检福利保费 /\nWellness Benefits Premium",
+        "牙科福利保费 / \nDental Benefits Premium",
+        "眼科福利保费 /\nVision Benefits Premium",
       ]);
-      assert.deepEqual(premium.rows.find(row => row[0] === "30-34"), ["30-34", 10841, 11532]);
+      assert.deepEqual(premium.rows.find(row => row[0] === "30-34"), ["30-34", 10841, 2580, 2472, 3408, ""]);
       const preauth = model.sheets.find(sheet => sheet.name === "预授权 Pre-auth");
       assert.equal(preauth.rows[1][0], "说明 / Overview");
       assert.match(preauth.rows[1][1], /至少两个工作日/);
@@ -72,15 +75,15 @@ const fixedCases = [
       });
       writeFileSync(outputPath, XLSX.write(workbook, { bookType: "xlsx", type: "buffer", compression: true, cellStyles: true }));
       const readBack = XLSX.read(readFileSync(outputPath), { type: "buffer", cellStyles: true });
-      assert.deepEqual(readBack.SheetNames, ["报价 Quotation", "费率 Premium", "方案1 TOB", "昂贵医院 List of HCPs", "参保条件 Eligibility", "预授权 Pre-auth", "重大既往症 Catastrophic PEC"]);
+      assert.deepEqual(readBack.SheetNames, ["报价 Quotation", "费率 Premium", "保险责任TOB", "昂贵医院 List of HCPs", "预授权 Pre-auth", "重大既往症 Catastrophic PEC", "参保条件 Eligibility"]);
       const premiumText = XLSX.utils.sheet_to_json(readBack.Sheets["费率 Premium"], { header: 1, raw: false }).flat().join("\n");
-      assert.match(premiumText, /P2O1|P201/);
-      const tobText = XLSX.utils.sheet_to_json(readBack.Sheets["方案1 TOB"], { header: 1, raw: false }).flat().join("\n");
-      assert.match(tobText, /THERAPY_TCM_HERBAL/);
+      assert.match(premiumText, /P201/);
+      const tobText = XLSX.utils.sheet_to_json(readBack.Sheets["保险责任TOB"], { header: 1, raw: false }).flat().join("\n");
+      assert.match(tobText, /理疗费/);
       assert.match(tobText, /PREGNANCY_COMPLICATIONS|妊娠并发症/);
       assert.match(tobText, /门诊第6次起就诊自付20%/);
       const quotationText = XLSX.utils.sheet_to_json(readBack.Sheets["报价 Quotation"], { header: 1, raw: false }).flat().join("\n");
-      assert.match(quotationText, /自付比例 Policy Co-payment/);
+      assert.match(quotationText, /方案调整选择/);
       assert.match(quotationText, /医疗保费下调6%/);
     },
   },
@@ -98,22 +101,22 @@ const fixedCases = [
       };
       const model = core.buildWorkbookModel(state);
       const quotationRows = model.sheets.find(sheet => sheet.name === "报价 Quotation").rows;
-      const paymentRow = quotationRows.find(row => String(row[0]).includes("支付条件 Payment Condition"));
-      const preExistingRow = quotationRows.find(row => row.some(cell => String(cell).includes("既往症安排")));
-      const discountRow = quotationRows.find(row => String(row[0]).includes("医疗保费优惠 Medical Discount"));
+      const paymentRow = quotationRows.find(row => String(row[0]).includes("方案调整选择"));
+      const preExistingRow = quotationRows.find(row => String(row[0]).includes("方案调整选择"));
+      const discountRow = quotationRows.find(row => row.some(cell => String(cell).includes("医疗保费优惠")));
       const totalRow = quotationRows.find(row => String(row[0]).includes("最终保费 Total Premium"));
-      assert.match(paymentRow.join("\n"), /柏盛 PCP 首诊/);
+      assert.match(paymentRow.join("\n"), /柏盛 ?PCP ?首诊/);
       assert.match(paymentRow.join("\n"), /急诊除外/);
       assert.match(paymentRow.join("\n"), /医疗保费下调3%/);
       assert.match(preExistingRow.join("\n"), /最高等级 FMU/);
-      assert.equal(discountRow[1], 19902);
+      assert.equal(discountRow[3], 19902);
       assert.equal(totalRow[1], 122271);
-      assert.equal(Number.isInteger(discountRow[1]), true);
+      assert.equal(Number.isInteger(discountRow[3]), true);
       assert.equal(Number.isInteger(totalRow[1]), true);
-      const tob = model.sheets.find(sheet => sheet.name === "方案1 TOB");
+      const tob = model.sheets.find(sheet => sheet.name === "保险责任TOB");
       const pecRow = tob.rows.find(row => String(row[0]).includes("一般既往症"));
-      assert.match(pecRow[1], /个人健康告知/);
-      assert.match(pecRow[1], /不承担一切既往症/);
+      assert.match(pecRow[2], /个人健康告知/);
+      assert.match(pecRow[2], /不承担一切既往症/);
     },
   },
 ];

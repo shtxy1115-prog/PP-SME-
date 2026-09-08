@@ -116,3 +116,22 @@ test("Excel 样式边框遵循 OOXML 子节点顺序，避免整份 styles.xml �
     assert.deepEqual(childPositions, [...childPositions].sort((left, right) => left - right), `border ${index} 子节点顺序无效`);
   });
 });
+
+test("Proposal 导出中的金额单元格使用金额格式，年龄仍保持整数", () => {
+  const helperStart = app.indexOf("function isCurrencyCell");
+  const helperEnd = app.indexOf("function applyWorksheetPrintLayout", helperStart);
+  const isCurrencyCell = new Function(`${app.slice(helperStart, helperEnd)}; return isCurrencyCell;`)();
+  const quotation = {
+    name: "报价 Quotation",
+    rows: [
+      [], [], [], [], [],
+      ["医疗保费 / Medical Premium", 1000, "可选生育福利保费", 2000],
+      [], [], [], [], [],
+      ["1 · E1", "员工", 40, 1000, 2000],
+    ],
+  };
+  assert.equal(isCurrencyCell(quotation, 5, 1000, 1), true);
+  assert.equal(isCurrencyCell(quotation, 5, 2000, 3), true);
+  assert.equal(isCurrencyCell(quotation, 11, 40, 2), false);
+  assert.equal(isCurrencyCell(quotation, 11, 1000, 3), true);
+});

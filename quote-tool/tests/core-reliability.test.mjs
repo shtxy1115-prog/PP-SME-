@@ -55,9 +55,9 @@ test("正式计划模型仅保留 Plan 3 WWE 与 Plan 4 WW/WWE", () => {
   assert.equal(coverageArea.planValues.P4WW, "全球\nWorldwide");
   assert.equal(Object.prototype.hasOwnProperty.call(coverageArea.planValues, invalidPlan3Worldwide), false);
   const tobCoverage = planCode => core.buildTobSheet(variant(`tob-${planCode}`, planCode), 0).rows.find(row => String(row[0]).includes("保障区域"));
-  assert.equal(tobCoverage("P3WWE")[1], "全球除美国\nWorldwide excluding US.");
-  assert.equal(tobCoverage("P4WWE")[1], "全球除美国\nWorldwide excluding US.");
-  assert.equal(tobCoverage("P4WW")[1], "全球\nWorldwide");
+  assert.equal(tobCoverage("P3WWE")[2], "全球除美国\nWorldwide excluding US.");
+  assert.equal(tobCoverage("P4WWE")[2], "全球除美国\nWorldwide excluding US.");
+  assert.equal(tobCoverage("P4WW")[2], "全球\nWorldwide");
 });
 
 test("年龄/费率状态：65-69 自动，70+ 待人工，不以 0 冒充费率", () => {
@@ -103,9 +103,9 @@ test("自付比例选项：第6次起自付20%，指定就诊不计次数，Medi
 
   const tob = core.buildTobSheet(copay, 0);
   const tobCopayRow = tob.rows.find(row => String(row[0]).includes("自付比例"));
-  assert.match(tobCopayRow[1], /门诊第6次起/);
-  assert.match(tobCopayRow[1], /PCP.*互联网问诊.*慢病送药/);
-  assert.match(tobCopayRow[1], /A 20% co-payment applies from the 6th outpatient visit; PCP visits, online consultations and chronic medicine delivery do not count toward the outpatient visit count\./);
+  assert.match(tobCopayRow[2], /门诊第6次起/);
+  assert.match(tobCopayRow[2], /PCP.*互联网问诊.*慢病送药/);
+  assert.match(tobCopayRow[2], /A 20% co-payment applies from the 6th outpatient visit; PCP visits, online consultations and chronic medicine delivery do not count toward the outpatient visit count\./);
   const model = core.buildWorkbookModel({
     mode: "compare",
     people: [person],
@@ -114,13 +114,13 @@ test("自付比例选项：第6次起自付20%，指定就诊不计次数，Medi
     pcpDirectBilling: false,
   });
   const quotationRows = model.sheets.find(sheet => sheet.name === "报价 Quotation").rows;
-  const quotationCopayRow = quotationRows.find(row => String(row[0]).includes("自付比例 Policy Co-payment"));
+  const quotationCopayRow = quotationRows.find(row => String(row[0]).includes("方案调整选择"));
   assert.match(quotationCopayRow.join("\n"), /门诊第6次起/);
-  const discountRow = quotationRows.find(row => String(row[0]).includes("医疗保费优惠 Medical Discount"));
-  assert.equal(discountRow[1], 2843);
+  const discountRow = quotationRows.find(row => row.some(cell => String(cell).includes("医疗保费优惠")));
+  assert.equal(discountRow[3], 2843);
 });
 
-test("费率 Premium 按已选 Medical 折扣显示调整后费率，并保留源费率", () => {
+test("费率 Premium 按已选 Medical 折扣只显示实际调整后费率", () => {
   const selected = variant("selected", "P4WW", {
     copay: "outpatient_from_sixth_20",
   });
@@ -137,11 +137,14 @@ test("费率 Premium 按已选 Medical 折扣显示调整后费率，并保留�
 
   assert.deepEqual(rateHeader, [
     "年龄段 / Age Band",
-    "P4WW\n调整后每人医疗费率 / Adjusted Medical Rate",
-    "源费率 / Source Medical Rate",
+    "医疗保费/\nMedical Premium",
+    "生育福利保费 / \nMaternity Benefits Premium",
+    "体检福利保费 /\nWellness Benefits Premium",
+    "牙科福利保费 / \nDental Benefits Premium",
+    "眼科福利保费 /\nVision Benefits Premium",
   ]);
-  assert.deepEqual(rateRow, ["40-44", 43126, 47391]);
-  assert.match(premium.rows.find(row => String(row[0]).includes("方案条件"))[2], /医疗费率调整/);
+  assert.deepEqual(rateRow, ["40-44", 43126, "", "", "", ""]);
+  assert.match(premium.rows.find(row => String(row[0]).includes("方案调整选择"))[1], /医疗保费下调/);
 });
 
 test("PCP 直付使用正式英文，Medical 折扣后按整元向上取整", () => {
@@ -161,7 +164,7 @@ test("PCP 直付使用正式英文，Medical 折扣后按整元向上取整", ()
     selectedPlanCodes: ["P4WW"],
     pcpDirectBilling: true,
   }).sheets.find(sheet => sheet.name === "报价 Quotation").rows;
-  const paymentRow = quotationRows.find(row => String(row[0]).includes("支付条件 Payment Condition"));
+  const paymentRow = quotationRows.find(row => String(row[0]).includes("方案调整选择"));
   assert.match(paymentRow.join("\n"), /Direct billing is available following an initial consultation with a Prosper PCP; emergency treatment is exempt from this requirement\./);
 });
 
@@ -188,11 +191,11 @@ test("FMU 是最高等级既往症选项，且可与自付比例和柏盛 PCP �
     selectedPlanCodes: ["P4WW"],
     pcpDirectBilling: true,
   }).sheets.find(sheet => sheet.name === "报价 Quotation").rows;
-  const paymentRow = quotationRows.find(row => String(row[0]).includes("支付条件 Payment Condition"));
-  assert.match(paymentRow.join("\n"), /柏盛 PCP 首诊/);
+  const paymentRow = quotationRows.find(row => String(row[0]).includes("方案调整选择"));
+  assert.match(paymentRow.join("\n"), /柏盛 ?PCP ?首诊/);
   assert.match(paymentRow.join("\n"), /急诊除外/);
   assert.match(paymentRow.join("\n"), /医疗保费下调3%/);
-  const preExistingRow = quotationRows.find(row => row.some(cell => String(cell).includes("既往症安排")));
+  const preExistingRow = quotationRows.find(row => String(row[0]).includes("方案调整选择"));
   assert.match(preExistingRow.join("\n"), /FMU/);
   assert.match(preExistingRow.join("\n"), /不承担一切既往症/);
 });
@@ -264,16 +267,16 @@ test("导出模型包含必需 sheets、状态/来源/共享责任与可解析�
     pcpDirectBilling: false,
   });
   assert.deepEqual(model.sheets.map(sheet => sheet.name), [
-    "报价 Quotation", "费率 Premium", "方案1 TOB", "昂贵医院 List of HCPs",
-    "参保条件 Eligibility", "预授权 Pre-auth", "重大既往症 Catastrophic PEC",
+    "报价 Quotation", "费率 Premium", "保险责任TOB", "昂贵医院 List of HCPs",
+    "预授权 Pre-auth", "重大既往症 Catastrophic PEC", "参保条件 Eligibility",
   ]);
   assert.ok(model.sheets.find(sheet => sheet.name === "费率 Premium").rows.flat().some(value => String(value).includes("待人工费率")));
-  const tob = model.sheets.find(sheet => sheet.name === "方案1 TOB");
-  assert.ok(tob.rows.flat().some(value => String(value).includes("THERAPY_TCM_HERBAL")));
+  const tob = model.sheets.find(sheet => sheet.name === "保险责任TOB");
+  assert.ok(tob.rows.flat().some(value => String(value).includes("理疗费")));
   assert.equal(model.metadata.sourceWorkbook, "PP & Prosper SME 方案整理表 20260814 v2.xlsx");
 });
 
-test("报价 Excel 采用纵向四列布局，不把多个方案横向塞在同一张摘要行", () => {
+test("报价导出遵循 Proposal 模板的固定工作表与列布局", () => {
   const model = core.buildWorkbookModel({
     companyCn: "测试团体",
     companyEn: "Test Group",
@@ -286,21 +289,37 @@ test("报价 Excel 采用纵向四列布局，不把多个方案横向塞在同�
     pcpDirectBilling: false,
   });
   const quotation = model.sheets.find(sheet => sheet.name === "报价 Quotation");
-  assert.equal(quotation.widths.length, 4);
+  assert.equal(quotation.widths.length, 8);
   assert.equal(quotation.merges.includes("A1:D1"), true);
-  assert.equal(quotation.merges.some(ref => /^[E-Z]/.test(ref)), false);
-  assert.equal(quotation.rows.every(row => row.length <= 4), true);
-  assert.equal(quotation.rows.filter(row => String(row[0]).includes("人员保费明细")).length, 2);
+  assert.equal(quotation.merges.includes("B5:D5"), true);
+  assert.equal(quotation.merges.includes("A10:D10"), true);
+  assert.equal(quotation.rows.every(row => row.length <= 8), true);
+  assert.equal(quotation.rows.filter(row => String(row[0]).includes("人员保费明细")).length, 1);
+  assert.equal(quotation.rows[10].length, 8);
 
   const premium = model.sheets.find(sheet => sheet.name === "费率 Premium");
-  assert.equal(premium.widths.length, 3);
-  assert.equal(premium.rows.every(row => row.length <= 3), true);
+  assert.equal(premium.widths.length, 6);
+  assert.equal(premium.rows.every(row => row.length <= 6), true);
   assert.equal(premium.rows.filter(row => String(row[0]).includes("计划 / Plan")).length, 2);
-  assert.deepEqual(premium.widths, [28, 64, 48]);
-  assert.equal(premium.merges.includes("A1:C1"), true);
-  assert.equal(premium.merges.includes("B2:C2"), true);
+  assert.deepEqual(premium.widths, [28.796875, 50, 49.19921875, 45.19921875, 42, 41.59765625]);
+  assert.equal(premium.merges.includes("A1:B1"), true);
+  assert.equal(premium.rows.some(row => row.some(value => String(value).includes("展示实际费率"))), false);
 
-  const tob = model.sheets.find(sheet => sheet.name === "方案1 TOB");
-  assert.deepEqual(quotation.widths, [34, 44, 22, 30]);
-  assert.deepEqual(tob.widths, [34, 44, 22, 24]);
+  const tob = model.sheets.find(sheet => sheet.name === "保险责任TOB");
+  assert.deepEqual(quotation.widths, [36, 44.796875, 41.796875, 30.796875, 33, 29.59765625, 26, 29]);
+  assert.deepEqual(tob.widths, [34.796875, 48.19921875, 22.796875, 24.796875, 11]);
+  assert.equal(tob.rows.every(row => row.length <= 5), true);
+  assert.ok(tob.merges.some(ref => ref === "A4:B4"));
+  assert.ok(tob.merges.some(ref => ref === "C4:D4"));
+  assert.deepEqual(model.sheets.find(sheet => sheet.name === "昂贵医院 List of HCPs").widths, [10.3984375, 110.796875]);
+  assert.deepEqual(model.sheets.find(sheet => sheet.name === "预授权 Pre-auth").widths, [7.796875, 133.19921875]);
+  assert.deepEqual(model.sheets.find(sheet => sheet.name === "重大既往症 Catastrophic PEC").widths, [5.19921875, 120.796875]);
+  assert.deepEqual(model.sheets.find(sheet => sheet.name === "参保条件 Eligibility").widths, [7.59765625, 123.59765625]);
+
+  assert.equal(core.proposalPlanCode("P3WWE"), "P301");
+  assert.equal(core.proposalPlanCode("P4WWE"), "P401");
+  assert.equal(core.proposalPlanCode("P4WW"), "P402");
+  const proposalText = model.sheets.flatMap(sheet => sheet.rows.flat()).join("\n");
+  assert.match(proposalText, /P402/);
+  assert.doesNotMatch(proposalText, /P4WW/);
 });

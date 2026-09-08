@@ -533,13 +533,17 @@
   function isCurrencyCell(sheet, rowIndex, value, columnIndex = 0) {
     if (typeof value !== "number") return false;
     const label = (sheet.rows?.[rowIndex] || []).filter(cell => typeof cell === "string").join(" ");
-    if (sheet.name === "费率 Premium" && rowIndex >= 7) return true;
-    if (sheet.name === "报价 Quotation" && /保费|Premium|费率|Rate|优惠|Discount|总额|Total/.test(label)) return true;
+    if (sheet.name === "费率 Premium" && rowIndex >= 6) return true;
+    if (sheet.name === "报价 Quotation") {
+      if (rowIndex >= 5 && rowIndex <= 8 && (columnIndex === 1 || columnIndex === 3)) return true;
+      if (rowIndex >= 11 && columnIndex >= 3) return true;
+    }
+    if (/保费|Premium|费率|Rate|优惠|Discount|总额|Total/.test(label)) return true;
     return /保费|Premium|费率|Rate|优惠|Discount|总额|Total/.test(label);
   }
 
   function applyWorksheetPrintLayout(worksheet, sheet) {
-    const landscape = sheet.name === "报价 Quotation" || sheet.name === "费率 Premium" || / TOB$/.test(sheet.name);
+    const landscape = sheet.name === "报价 Quotation" || sheet.name === "费率 Premium" || sheet.name === "保险责任TOB" || / TOB$/.test(sheet.name);
     worksheet["!margins"] = {
       left: 0.25,
       right: 0.25,
@@ -578,7 +582,7 @@
     if (kind === "title") return 1;
     if (kind === "header") return 2;
     if (kind === "section") return 3;
-    if (kind === "meta") return isLabel ? 4 : 5;
+    if (kind === "meta") return numberFormat === "currency" ? 9 : isLabel ? 4 : 5;
     if (kind === "total") return numberFormat === "currency" ? 11 : 10;
     if (kind === "discount") return numberFormat === "currency" ? 13 : 12;
     if (numberFormat === "currency") return 9;
@@ -637,7 +641,7 @@
   }
 
   function applyWorksheetPrintXml(xml, sheet) {
-    const landscape = sheet.name === "报价 Quotation" || sheet.name === "费率 Premium" || / TOB$/.test(sheet.name);
+    const landscape = sheet.name === "报价 Quotation" || sheet.name === "费率 Premium" || sheet.name === "保险责任TOB" || / TOB$/.test(sheet.name);
     const orientation = landscape ? "landscape" : "portrait";
     const pageMargins = `<pageMargins left="0.25" right="0.25" top="0.4" bottom="0.4" header="0.2" footer="0.2"/>`;
     const pageSetup = `<pageSetup orientation="${orientation}" fitToWidth="1" fitToHeight="0" paperSize="9"/>`;
@@ -677,6 +681,7 @@
       const rowIndex = Number(refMatch[2]) - 1;
       const columnIndex = columnIndexFromName(refMatch[1]);
       const value = sheet.rows?.[rowIndex]?.[columnIndex];
+      if (value === "" || value === null || value === undefined) return opening;
       const kind = workbookRowKind(sheet, rowIndex);
       const numberFormat = isCurrencyCell(sheet, rowIndex, value, columnIndex) ? "currency" : typeof value === "number" ? "integer" : "general";
       const styleId = styleIdFor(kind, columnIndex === 0, numberFormat);
