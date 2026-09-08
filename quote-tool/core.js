@@ -800,46 +800,104 @@
     return { name: "报价 Quotation", rows, rowStyles, widths: [36, 44.796875, 41.796875, 30.796875, 33, 29.59765625, 26, 29], merges };
   }
 
-  function buildPremiumBlock(rows, rowStyles, merges, variant, index, state, first = false) {
-    const plan = getPlan(variant?.planCode);
-    if (!first) {
-      const titleRow = rows.length + 1;
-      rows.push([`方案 ${index + 1}\n${proposalPlanLabel(plan)}`, "", "", "", "", ""]);
-      rowStyles.push("title");
-      merges.push(`A${titleRow}:B${titleRow}`);
-    }
-    rows.push(["计划 / Plan", proposalPlanLabel(plan), "", "", "", ""]);
-    rowStyles.push("meta");
-    rows.push(["区域 / Area", plan?.area || "", "", "", "", ""]);
-    rowStyles.push("meta");
-    rows.push(["费率列 / Rate Column", proposalPlanCode(plan), "", "", "", ""]);
-    rowStyles.push("meta");
-    rows.push(["方案调整选择 / Plan Change Options", selectedPlanChangeLines(variant, state).join("\n"), "", "", "", ""]);
-    rowStyles.push("section");
-    rows.push(["年龄段 / Age Band", "医疗保费/\nMedical Premium", "生育福利保费 / \nMaternity Benefits Premium", "体检福利保费 /\nWellness Benefits Premium", "牙科福利保费 / \nDental Benefits Premium", "眼科福利保费 /\nVision Benefits Premium"]);
-    rowStyles.push("header");
+  const PREMIUM_DISPLAY_PROFILES = Object.freeze({
+    P1: Object.freeze(["m30", "w3000", "d5000"]),
+    P2: Object.freeze(["m30", "w3000", "d5000"]),
+    P3: Object.freeze(["m60", "w5000", "d10000no"]),
+    P4: Object.freeze(["m60", "w5000", "d10000no"]),
+  });
+
+  const PREMIUM_DISPLAY_LABELS = Object.freeze({
+    maternity: "生育福利/ Maternity Benefits ",
+    wellness: "体检福利 / Wellness Benefits",
+    dental: "齿科福利 / Dental Benefits",
+    vision: "眼科福利 / Vision Benefits",
+  });
+
+  const PREMIUM_DISPLAY_SUM_ASSURED = Object.freeze({
+    m30: "30,000元 / CNY30,000",
+    m60: "60,000元 / CNY60,000",
+    w3000: "3,000元 / CNY3,000",
+    w5000: "5,000元 / CNY5,000",
+    d5000: "5,000元 / CNY5,000",
+    d10000no: "10,000元/CNY10,000",
+  });
+
+  function premiumDisplayCatalog(variants = []) {
+    const catalog = [];
+    const seen = new Set();
+    Object.keys(OPTIONAL_SECTION_TYPES).forEach(type => {
+      variants.forEach(variant => {
+        const plan = getPlan(variant?.planCode);
+        const profile = (PREMIUM_DISPLAY_PROFILES[plan?.group] || []).filter(code => getOptional(type, code));
+        profile.forEach(code => {
+        const option = type ? getOptional(type, code) : null;
+        const premium = option && plan && Object.prototype.hasOwnProperty.call(option.premiumByPlan, plan.code)
+          ? option.premiumByPlan[plan.code]
+          : null;
+        if (!type || !option || premium === null || premium === undefined) return;
+        const key = `${type}:${code}:${premium}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        catalog.push([
+          PREMIUM_DISPLAY_LABELS[type],
+          PREMIUM_DISPLAY_SUM_ASSURED[code] || option.label,
+          premium,
+        ]);
+        });
+      });
+    });
+    return catalog;
+  }
+
+  function buildPremiumSheetProposalLayout(state, variants) {
+    const medicalColumnCount = variants.length + 1;
+    const tableColumnCount = Math.max(3, medicalColumnCount);
+    const blanks = count => Array.from({ length: count }, () => "");
+    const rows = [
+      ["费率表 Premium", ...blanks(tableColumnCount - 1)],
+      ["计划 / Plan", ...variants.map(variant => proposalPlanLabel(variant.planCode)), ...blanks(tableColumnCount - medicalColumnCount)],
+      ["区域 / Area", ...variants.map(variant => getPlan(variant.planCode)?.area || ""), ...blanks(tableColumnCount - medicalColumnCount)],
+      ["费率列 / Rate Column", ...variants.map(variant => proposalPlanCode(variant.planCode)), ...blanks(tableColumnCount - medicalColumnCount)],
+      ["方案调整选择 / Plan Change Options", ...variants.map(variant => selectedPlanChangeLines(variant, state).join("\n")), ...blanks(tableColumnCount - medicalColumnCount)],
+      ["年龄段 / Age Band", ...variants.map(() => "医疗保费/\nMedical Premium"), ...blanks(tableColumnCount - medicalColumnCount)],
+    ];
+    const rowStyles = ["title", "meta", "meta", "meta", "section", "header"];
     RATE_BANDS.forEach(band => {
-      const rate = rateFor(band.min, plan);
       rows.push([
         band.label,
-        rate === null ? "单独核保 / 待人工费率" : adjustedMedicalRateFor(rate, variant, state),
-        optionalPremiumCell(variant, plan, "maternity"),
-        optionalPremiumCell(variant, plan, "wellness"),
-        optionalPremiumCell(variant, plan, "dental"),
-        optionalPremiumCell(variant, plan, "vision"),
+        ...variants.map(variant => {
+          const plan = getPlan(variant.planCode);
+          const rate = rateFor(band.min, plan);
+          return rate === null ? "单独核保 / 待人工费率" : adjustedMedicalRateFor(rate, variant, state);
+        }),
+        ...blanks(tableColumnCount - medicalColumnCount),
       ]);
       rowStyles.push("body");
     });
-    rows.push(["70-75*", "单独核保 / 待人工费率", optionalPremiumCell(variant, plan, "maternity"), optionalPremiumCell(variant, plan, "wellness"), optionalPremiumCell(variant, plan, "dental"), optionalPremiumCell(variant, plan, "vision")]);
+    rows.push(["70-75*", ...variants.map(() => "单独核保 / 待人工费率"), ...blanks(tableColumnCount - medicalColumnCount)]);
     rowStyles.push("section");
-  }
-
-  function buildPremiumSheet(state, variants) {
-    const rows = [["费率表 Premium", "", "", "", "", ""]];
-    const rowStyles = ["title"];
-    const merges = ["A1:B1"];
-    variants.forEach((variant, index) => buildPremiumBlock(rows, rowStyles, merges, variant, index, state, index === 0));
-    return { name: "费率 Premium", rows, rowStyles, widths: [28.796875, 50, 49.19921875, 45.19921875, 42, 41.59765625], merges };
+    for (let index = 0; index < 3; index += 1) {
+      rows.push(blanks(tableColumnCount));
+      rowStyles.push("body");
+    }
+    const optionalTitleRow = rows.length + 1;
+    rows.push(["可选方案费率", ...blanks(tableColumnCount - 1)]);
+    rowStyles.push("title");
+    rows.push(["保险责任 / Benefits", "额度 / Sum of Assured", "保费 / Premium", ...blanks(tableColumnCount - 3)]);
+    rowStyles.push("header");
+    premiumDisplayCatalog(variants).forEach(catalogRow => {
+      rows.push([...catalogRow, ...blanks(tableColumnCount - 3)]);
+      rowStyles.push("body");
+    });
+    const lastColumn = columnName(tableColumnCount - 1);
+    return {
+      name: "费率 Premium",
+      rows,
+      rowStyles,
+      widths: [34, ...blanks(tableColumnCount - 1).map(() => 50.796875)],
+      merges: [`A1:${lastColumn}1`, `A${optionalTitleRow}:C${optionalTitleRow}`],
+    };
   }
 
   function buildListSheet(name, title, values, widths = [8, 110]) {
@@ -885,7 +943,7 @@
     const variants = Array.isArray(state.variants) ? state.variants : [];
     const sheets = [
       buildQuotationSheet(state, variants),
-      buildPremiumSheet(state, variants),
+      buildPremiumSheetProposalLayout(state, variants),
       buildCombinedTobSheet(state, variants),
       frozenTemplateSheet("昂贵医院 List of HCPs"),
       frozenTemplateSheet("预授权 Pre-auth"),

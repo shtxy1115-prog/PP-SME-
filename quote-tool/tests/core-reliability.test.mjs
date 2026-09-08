@@ -135,15 +135,8 @@ test("费率 Premium 按已选 Medical 折扣只显示实际调整后费率", ()
   const rateHeader = premium.rows.find(row => String(row[0]).includes("年龄段 / Age Band"));
   const rateRow = premium.rows.find(row => row[0] === "40-44");
 
-  assert.deepEqual(rateHeader, [
-    "年龄段 / Age Band",
-    "医疗保费/\nMedical Premium",
-    "生育福利保费 / \nMaternity Benefits Premium",
-    "体检福利保费 /\nWellness Benefits Premium",
-    "牙科福利保费 / \nDental Benefits Premium",
-    "眼科福利保费 /\nVision Benefits Premium",
-  ]);
-  assert.deepEqual(rateRow, ["40-44", 43126, "", "", "", ""]);
+  assert.deepEqual(rateHeader, ["年龄段 / Age Band", "医疗保费/\nMedical Premium", ""]);
+  assert.deepEqual(rateRow, ["40-44", 43126, ""]);
   assert.match(premium.rows.find(row => String(row[0]).includes("方案调整选择"))[1], /医疗保费下调/);
 });
 
@@ -298,11 +291,11 @@ test("报价导出遵循 Proposal 模板的固定工作表与列布局", () => {
   assert.equal(quotation.rows[10].length, 8);
 
   const premium = model.sheets.find(sheet => sheet.name === "费率 Premium");
-  assert.equal(premium.widths.length, 6);
-  assert.equal(premium.rows.every(row => row.length <= 6), true);
-  assert.equal(premium.rows.filter(row => String(row[0]).includes("计划 / Plan")).length, 2);
-  assert.deepEqual(premium.widths, [28.796875, 50, 49.19921875, 45.19921875, 42, 41.59765625]);
-  assert.equal(premium.merges.includes("A1:B1"), true);
+  assert.equal(premium.widths.length, 3);
+  assert.equal(premium.rows.every(row => row.length <= 3), true);
+  assert.equal(premium.rows.filter(row => String(row[0]).includes("计划 / Plan")).length, 1);
+  assert.deepEqual(premium.widths, [34, 50.796875, 50.796875]);
+  assert.equal(premium.merges.includes("A1:C1"), true);
   assert.equal(premium.rows.some(row => row.some(value => String(value).includes("展示实际费率"))), false);
 
   const tob = model.sheets.find(sheet => sheet.name === "保险责任TOB");
@@ -320,4 +313,28 @@ test("报价导出遵循 Proposal 模板的固定工作表与列布局", () => {
   const proposalText = model.sheets.flatMap(sheet => sheet.rows.flat()).join("\n");
   assert.match(proposalText, /P402/);
   assert.doesNotMatch(proposalText, /P4WW/);
+});
+
+test("Premium 按 Proposal 费率页横向比较 Medical，并独立展示可选福利目录", () => {
+  const model = core.buildWorkbookModel({
+    mode: "compare",
+    variants: [variant("mainland", "P101"), variant("worldwideExUs", "P3WWE")],
+    selectedPlanCodes: ["P101", "P3WWE"],
+    people: [],
+  });
+  const premium = model.sheets.find(sheet => sheet.name === "费率 Premium");
+  assert.deepEqual(premium.widths, [34, 50.796875, 50.796875]);
+  assert.deepEqual(premium.rows[0], ["费率表 Premium", "", ""]);
+  assert.deepEqual(premium.rows[1], ["计划 / Plan", "P101 · 大陆计划 选项一", "P301 · 全球除美计划"]);
+  assert.deepEqual(premium.rows[5], ["年龄段 / Age Band", "医疗保费/\nMedical Premium", "医疗保费/\nMedical Premium"]);
+  assert.deepEqual(premium.rows[6], ["0-7", 11068, 24426]);
+  assert.equal(premium.rows[6].length, 3);
+  assert.equal(premium.rows.some(row => row.includes("生育福利保费")), false);
+  const optionalTitle = premium.rows.findIndex(row => row[0] === "可选方案费率");
+  assert.ok(optionalTitle > 0);
+  assert.deepEqual(premium.rows[optionalTitle + 1], ["保险责任 / Benefits", "额度 / Sum of Assured", "保费 / Premium"]);
+  assert.deepEqual(premium.rows[optionalTitle + 2], ["生育福利/ Maternity Benefits ", "30,000元 / CNY30,000", 2580]);
+  assert.deepEqual(premium.rows[optionalTitle + 3], ["生育福利/ Maternity Benefits ", "60,000元 / CNY60,000", 4836]);
+  assert.deepEqual(premium.rows[optionalTitle + 4], ["体检福利 / Wellness Benefits", "3,000元 / CNY3,000", 2472]);
+  assert.deepEqual(premium.merges, ["A1:C1", `A${optionalTitle + 1}:C${optionalTitle + 1}`]);
 });

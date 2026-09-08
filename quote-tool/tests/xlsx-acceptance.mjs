@@ -51,17 +51,16 @@ const fixedCases = [
       assert.ok(quotation.merges.includes("B5:D5"));
       assert.ok(quotation.merges.includes("A10:D10"));
       const premium = model.sheets.find(sheet => sheet.name === "费率 Premium");
-      assert.equal(premium.rows[1].length, 6);
+      assert.equal(premium.rows[1].length, 3);
       assert.match(premium.rows[1][1], /P201/);
       assert.deepEqual(premium.rows.find(row => String(row[0]).includes("年龄段 / Age Band")), [
         "年龄段 / Age Band",
         "医疗保费/\nMedical Premium",
-        "生育福利保费 / \nMaternity Benefits Premium",
-        "体检福利保费 /\nWellness Benefits Premium",
-        "牙科福利保费 / \nDental Benefits Premium",
-        "眼科福利保费 /\nVision Benefits Premium",
+        "",
       ]);
-      assert.deepEqual(premium.rows.find(row => row[0] === "30-34"), ["30-34", 10841, 2580, 2472, 3408, ""]);
+      assert.deepEqual(premium.rows.find(row => row[0] === "30-34"), ["30-34", 10841, ""]);
+      assert.ok(premium.rows.some(row => row[0] === "可选方案费率"));
+      assert.ok(premium.rows.some(row => row[0] === "生育福利/ Maternity Benefits "));
       const preauth = model.sheets.find(sheet => sheet.name === "预授权 Pre-auth");
       assert.equal(preauth.frozenTemplate, true);
       const workbook = XLSX.utils.book_new();
