@@ -675,6 +675,7 @@
   }
 
   function styleWorksheetXml(xml, sheet) {
+    if (sheet.frozenTemplate) return xml;
     const styled = xml.replace(/<c\b([^>]*?)(\/?)>/g, (opening, attributes, selfClosing) => {
       const refMatch = attributes.match(/\br="([A-Z]+)(\d+)"/);
       if (!refMatch) return opening;
@@ -704,7 +705,11 @@
       const xml = await entry.async("string");
       zip.file(path, styleWorksheetXml(xml, model.sheets[index]));
     }
-    return zip.generateAsync({ type: "arraybuffer", compression: "DEFLATE", compressionOptions: { level: 6 } });
+    const styledBytes = await zip.generateAsync({ type: "arraybuffer", compression: "DEFLATE", compressionOptions: { level: 6 } });
+    return window.PPProposalTemplateLock.lockToProposalTemplate(styledBytes, {
+      JSZip: window.JSZip,
+      templateBase64: window.PP_SME_PROPOSAL_TEMPLATE_BASE64,
+    });
   }
 
   async function exportExcel() {

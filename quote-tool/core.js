@@ -877,16 +877,20 @@
     return { name: "预授权 Pre-auth", rows, rowStyles, widths: [7.796875, 133.19921875], merges: ["A1:B1"] };
   }
 
+  function frozenTemplateSheet(name) {
+    return { name, rows: [[""]], rowStyles: ["body"], widths: [10], merges: [], frozenTemplate: true };
+  }
+
   function buildWorkbookModel(state = {}) {
     const variants = Array.isArray(state.variants) ? state.variants : [];
     const sheets = [
       buildQuotationSheet(state, variants),
       buildPremiumSheet(state, variants),
       buildCombinedTobSheet(state, variants),
-      buildListSheet("昂贵医院 List of HCPs", "昂贵医疗机构列表 / List of High Cost Providers", HCP, [10.3984375, 110.796875]),
-      buildPreauthSheet(),
-      buildListSheet("重大既往症 Catastrophic PEC", "重大既往症列表 / Catastrophic Pre-existing Condition List", [PEC], [5.19921875, 120.796875]),
-      buildEligibilitySheet(),
+      frozenTemplateSheet("昂贵医院 List of HCPs"),
+      frozenTemplateSheet("预授权 Pre-auth"),
+      frozenTemplateSheet("重大既往症 Catastrophic PEC"),
+      frozenTemplateSheet("参保条件 Eligibility"),
     ];
     return {
       metadata: { sourceWorkbook: SOURCE_WORKBOOK, sourceSheets: [SOURCE_SHEET_BENEFITS, SOURCE_SHEET_RATES, "昂贵医院List of HCPs", "事先授权 Pre-authorization request", "重大既往症列表"], generatedBy: "PP & Prosper SME Core Reliability v4" },

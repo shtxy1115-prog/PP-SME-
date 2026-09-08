@@ -63,8 +63,7 @@ const fixedCases = [
       ]);
       assert.deepEqual(premium.rows.find(row => row[0] === "30-34"), ["30-34", 10841, 2580, 2472, 3408, ""]);
       const preauth = model.sheets.find(sheet => sheet.name === "预授权 Pre-auth");
-      assert.equal(preauth.rows[1][0], "说明 / Overview");
-      assert.match(preauth.rows[1][1], /至少两个工作日/);
+      assert.equal(preauth.frozenTemplate, true);
       const workbook = XLSX.utils.book_new();
       model.sheets.forEach(sheet => {
         const worksheet = XLSX.utils.aoa_to_sheet(sheet.rows);

@@ -311,10 +311,8 @@ test("报价导出遵循 Proposal 模板的固定工作表与列布局", () => {
   assert.equal(tob.rows.every(row => row.length <= 5), true);
   assert.ok(tob.merges.some(ref => ref === "A4:B4"));
   assert.ok(tob.merges.some(ref => ref === "C4:D4"));
-  assert.deepEqual(model.sheets.find(sheet => sheet.name === "昂贵医院 List of HCPs").widths, [10.3984375, 110.796875]);
-  assert.deepEqual(model.sheets.find(sheet => sheet.name === "预授权 Pre-auth").widths, [7.796875, 133.19921875]);
-  assert.deepEqual(model.sheets.find(sheet => sheet.name === "重大既往症 Catastrophic PEC").widths, [5.19921875, 120.796875]);
-  assert.deepEqual(model.sheets.find(sheet => sheet.name === "参保条件 Eligibility").widths, [7.59765625, 123.59765625]);
+  const frozenNames = ["昂贵医院 List of HCPs", "预授权 Pre-auth", "重大既往症 Catastrophic PEC", "参保条件 Eligibility"];
+  assert.equal(model.sheets.filter(sheet => frozenNames.includes(sheet.name)).every(sheet => sheet.frozenTemplate === true), true);
 
   assert.equal(core.proposalPlanCode("P3WWE"), "P301");
   assert.equal(core.proposalPlanCode("P4WWE"), "P401");
