@@ -70,6 +70,8 @@
   }
 
   function mergeSharedStrings(templateXml, generatedXml) {
+    if (!generatedXml) return { xml: templateXml, offset: 0 };
+    if (!templateXml) return { xml: generatedXml, offset: 0 };
     const templateItems = (templateXml.match(/<si>[\s\S]*?<\/si>/g) || []);
     const generatedItems = (generatedXml.match(/<si>[\s\S]*?<\/si>/g) || []);
     const count = Number((templateXml.match(/\bcount="(\d+)"/) || [, 0])[1]) + Number((generatedXml.match(/\bcount="(\d+)"/) || [, 0])[1]);
@@ -95,13 +97,13 @@
     const [templateStyles, generatedStyles, templateStrings, generatedStrings] = await Promise.all([
       templateZip.file("xl/styles.xml").async("string"),
       generatedZip.file("xl/styles.xml").async("string"),
-      templateZip.file("xl/sharedStrings.xml").async("string"),
-      generatedZip.file("xl/sharedStrings.xml").async("string"),
+      templateZip.file("xl/sharedStrings.xml")?.async("string"),
+      generatedZip.file("xl/sharedStrings.xml")?.async("string"),
     ]);
     const styles = mergeStyles(templateStyles, generatedStyles);
     const strings = mergeSharedStrings(templateStrings, generatedStrings);
     templateZip.file("xl/styles.xml", styles.xml);
-    templateZip.file("xl/sharedStrings.xml", strings.xml);
+    if (strings.xml) templateZip.file("xl/sharedStrings.xml", strings.xml);
     for (let index = 1; index <= 3; index += 1) {
       const xml = await generatedZip.file(`xl/worksheets/sheet${index}.xml`).async("string");
       templateZip.file(`xl/worksheets/sheet${index}.xml`, remapDynamicSheet(xml, styles.styleOffset, strings.offset));

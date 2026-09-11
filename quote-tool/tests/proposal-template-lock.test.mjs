@@ -8,6 +8,7 @@ import test from "node:test";
 const require = createRequire(import.meta.url);
 const core = require("../core.js");
 const JSZip = require("../vendor/jszip.min.js");
+const XLSX = require("../vendor/xlsx.full.min.js");
 const { lockToProposalTemplate, FROZEN_SHEET_PATHS } = require("../template-lock.js");
 const here = dirname(fileURLToPath(import.meta.url));
 const templatePath = "/Users/doristao/Documents/PP SME/PP SME  Proposal 模板.xlsx";
@@ -30,6 +31,23 @@ test("锁定导出保留四张模板页的原始 XML", async () => {
   const templateBytes = readFileSync(templatePath);
   const lockedBytes = await lockToProposalTemplate(templateBytes, { JSZip, templateBase64: embeddedTemplate });
   const [sourceZip, lockedZip] = await Promise.all([JSZip.loadAsync(templateBytes), JSZip.loadAsync(lockedBytes)]);
+  for (const path of FROZEN_SHEET_PATHS) {
+    assert.equal(await lockedZip.file(path).async("string"), await sourceZip.file(path).async("string"), `${path} must remain byte-for-byte identical`);
+  }
+});
+
+test("锁定导出兼容动态工作簿缺少 sharedStrings.xml 的正常场景", async () => {
+  const workbook = XLSX.utils.book_new();
+  for (const name of ["报价", "费率", "福利"]) {
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([[`${name} 动态内容`], [123]]), name);
+  }
+  const generatedBytes = XLSX.write(workbook, { bookType: "xlsx", type: "array", compression: true, cellStyles: true });
+  const generatedZip = await JSZip.loadAsync(generatedBytes);
+  assert.equal(generatedZip.file("xl/sharedStrings.xml"), null, "回归场景应保持 SheetJS 的无 sharedStrings 输出");
+
+  const lockedBytes = await lockToProposalTemplate(generatedBytes, { JSZip, templateBase64: embeddedTemplate });
+  const [sourceZip, lockedZip] = await Promise.all([JSZip.loadAsync(readFileSync(templatePath)), JSZip.loadAsync(lockedBytes)]);
+  assert.match(await lockedZip.file("xl/worksheets/sheet1.xml").async("string"), /报价 动态内容/);
   for (const path of FROZEN_SHEET_PATHS) {
     assert.equal(await lockedZip.file(path).async("string"), await sourceZip.file(path).async("string"), `${path} must remain byte-for-byte identical`);
   }
