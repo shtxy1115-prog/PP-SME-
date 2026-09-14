@@ -592,7 +592,7 @@
 
   function buildStylesXml() {
     const color = value => `FF${value}`;
-    const font = (name, size, bold, rgb) => `<font><name val="${name}"/><sz val="${size}"/>${bold ? "<b/>" : ""}<color rgb="${color(rgb)}"/></font>`;
+    const font = (name, size, bold, rgb) => `<font>${bold ? "<b/>" : ""}<sz val="${size}"/><color rgb="${color(rgb)}"/><name val="${name}"/></font>`;
     const fill = rgb => {
       if (rgb === "none") return "<fill><patternFill patternType=\"none\"/></fill>";
       if (rgb === "gray125") return "<fill><patternFill patternType=\"gray125\"/></fill>";

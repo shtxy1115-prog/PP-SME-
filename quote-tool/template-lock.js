@@ -21,7 +21,11 @@
   function part(xml, tag) {
     const match = xml.match(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)<\\/${tag}>`));
     if (!match) throw new Error(`Missing ${tag} in XLSX styles.xml`);
-    return { full: match[0], inner: match[1], count: (match[1].match(/<[^/][^>]*?(?:\/>|>[\s\S]*?<\/[^>]+>)/g) || []).length };
+    const childTag = { numFmts: "numFmt", fonts: "font", fills: "fill", borders: "border", cellXfs: "xf" }[tag];
+    const count = childTag
+      ? (match[1].match(new RegExp("<" + childTag + "\\b", "g")) || []).length
+      : (match[1].match(/<[^/][^>]*?(?:\/>|>[\s\S]*?<\/[^>]+>)/g) || []).length;
+    return { full: match[0], inner: match[1], count };
   }
 
   function replacePart(xml, tag, inner, count) {

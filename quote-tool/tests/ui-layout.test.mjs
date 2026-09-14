@@ -99,12 +99,13 @@ test("Excel 导出设置页面适配，避免 Quotation/Premium 横向分页", (
   assert.ok(orderedXml.indexOf("<pageSetup") < orderedXml.indexOf("<ignoredErrors"));
 });
 
-test("Excel 样式边框遵循 OOXML 子节点顺序，避免整份 styles.xml 被删除", () => {
+test("Excel 样式字体和边框遵循 OOXML 子节点顺序，避免整份 styles.xml 被删除", () => {
   const helperStart = app.indexOf("const WORKBOOK_COLORS");
   const helperEnd = app.indexOf("function applyWorksheetPrintXml", helperStart);
   const buildStylesXml = new Function(`${app.slice(helperStart, helperEnd)}; return buildStylesXml;`)();
   const stylesXml = buildStylesXml();
-  assert.match(stylesXml, /<font><name val="Aptos Display"\/><sz val="15"\/><b\/><color rgb="FFFFFFFF"\/><\/font>/);
+  assert.match(stylesXml, /<font><b\/><sz val="15"\/><color rgb="FFFFFFFF"\/><name val="Aptos Display"\/><\/font>/);
+  assert.doesNotMatch(stylesXml, /<font><name val="Aptos Display"\/><sz val="15"\/><b\/><color rgb="FFFFFFFF"\/><\/font>/);
   assert.match(stylesXml, /<fill><patternFill patternType="solid"><fgColor rgb="FF143B72"/);
   const bordersXml = stylesXml.match(/<borders\b[^>]*>([\s\S]*?)<\/borders>/)?.[1] || "";
   const borders = Array.from(bordersXml.matchAll(/<border>([\s\S]*?)<\/border>/g), match => match[1]);

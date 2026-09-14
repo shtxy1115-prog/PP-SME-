@@ -203,3 +203,11 @@
 - 最小修正：模板锁定组件现在兼容动态工作簿缺少 shared strings 的合法输出；没有该文件时保留模板的 shared strings，并跳过不需要的字符串索引偏移。四张固定 Proposal 页仍逐字节保持模板原样。
 - 新增真实回归场景：用 SheetJS 生成无 `sharedStrings.xml` 的三张动态工作表，完成模板锁定并验证动态内容可读、四张固定页 XML 不变。该回归修复前失败、修复后通过。
 - 本轮源码与 standalone 自动化回归为 `24/24` 通过，XLSX acceptance 全部通过；standalone 已重新构建。浏览器实际点击“导出报价 Excel”未再弹出样式处理失败提示。
+
+## 2026-09-14 Excel 样式兼容性补正
+
+- 用户重新导出的 `源禾-PP & Prosper SME 报价表-2026-09-14.xlsx` 在 Excel 打开时再次出现“部分内容有问题”的恢复提示。该文件的 ZIP、XML 和工作表数据本身完整，问题集中在 Excel 加载样式组件时的兼容性。
+- 根因有两处：导出新增字体节点的 OOXML 子节点顺序曾与模板/Excel 既有顺序不一致（原实现为 `name → sz → b → color`）；模板合并器还用包含嵌套边框子节点的通用正则计算 `count`，将实际 15 个 `<border>` 节点声明成 44 个。Excel 会因此无法正确加载 `/xl/styles.xml`，出现恢复提示，或在恢复后丢弃模板样式，最终变成苍白表格。
+- 最小修正为：新增字体按 `b（可选）→ sz → color → name` 输出；`numFmts/fonts/fills/borders/cellXfs` 的 `count` 按对应直接子节点重新计算。不修改费率、计划、折扣、TOB、四张固定模板页或任何报价业务结果。已增加回归，禁止再次生成错误的字体顺序和样式计数。
+- 修正后的合成 XLSX 已通过 XML 解析、XLSX 回读、ZIP 完整性检查和 LibreOffice 转换；最终 standalone 已重新构建，浏览器点击导出路径不再触发“样式处理失败”提示。
+- 本节不把用户手上已经生成的旧文件自动视为修复；旧文件需从重新加载后的最新版 standalone 重新导出。Microsoft Excel 的最终人工打开验收以新生成文件为准。

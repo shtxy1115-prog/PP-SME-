@@ -52,3 +52,21 @@ test("锁定导出兼容动态工作簿缺少 sharedStrings.xml 的正常场景"
     assert.equal(await lockedZip.file(path).async("string"), await sourceZip.file(path).async("string"), `${path} must remain byte-for-byte identical`);
   }
 });
+
+test("锁定导出的 styles.xml 集合 count 与实际子节点一致，避免 Excel 丢弃样式", async () => {
+  const workbook = XLSX.utils.book_new();
+  for (const name of ["报价", "费率", "福利"]) {
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([[`${name} 动态内容`], [123]]), name);
+  }
+  const generatedBytes = XLSX.write(workbook, { bookType: "xlsx", type: "array", compression: true, cellStyles: true });
+  const lockedBytes = await lockToProposalTemplate(generatedBytes, { JSZip, templateBase64: embeddedTemplate });
+  const lockedZip = await JSZip.loadAsync(lockedBytes);
+  const stylesXml = await lockedZip.file("xl/styles.xml").async("string");
+  for (const [container, child] of [["numFmts", "numFmt"], ["fonts", "font"], ["fills", "fill"], ["borders", "border"], ["cellXfs", "xf"]]) {
+    const match = stylesXml.match(new RegExp(`<${container}\\b[^>]*>([\\s\\S]*?)<\\/${container}>`));
+    assert.ok(match, `styles.xml must contain ${container}`);
+    const declared = Number(match[0].match(/\bcount="(\d+)"/)[1]);
+    const actual = (match[1].match(new RegExp(`<${child}\\b`, "g")) || []).length;
+    assert.equal(declared, actual, `${container} count must match its direct child count`);
+  }
+});
