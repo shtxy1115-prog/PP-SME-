@@ -300,10 +300,11 @@ test("报价导出遵循 Proposal 模板的固定工作表与列布局", () => {
 
   const tob = model.sheets.find(sheet => sheet.name === "保险责任TOB");
   assert.deepEqual(quotation.widths, [36, 44.796875, 41.796875, 30.796875, 33, 29.59765625, 26, 29]);
-  assert.deepEqual(tob.widths, [34.796875, 48.19921875, 22.796875, 24.796875, 11]);
-  assert.equal(tob.rows.every(row => row.length <= 5), true);
+  assert.deepEqual(tob.widths, [34.796875, 48.19921875, 22.796875, 24.796875, 22.796875, 24.796875]);
+  assert.equal(tob.rows.every(row => row.length <= 6), true);
   assert.ok(tob.merges.some(ref => ref === "A4:B4"));
   assert.ok(tob.merges.some(ref => ref === "C4:D4"));
+  assert.ok(tob.merges.some(ref => ref === "E4:F4"));
   const frozenNames = ["昂贵医院 List of HCPs", "预授权 Pre-auth", "重大既往症 Catastrophic PEC", "参保条件 Eligibility"];
   assert.equal(model.sheets.filter(sheet => frozenNames.includes(sheet.name)).every(sheet => sheet.frozenTemplate === true), true);
 
@@ -337,4 +338,27 @@ test("Premium 按 Proposal 费率页横向比较 Medical，并独立展示可选
   assert.deepEqual(premium.rows[optionalTitle + 3], ["生育福利/ Maternity Benefits ", "60,000元 / CNY60,000", 4836]);
   assert.deepEqual(premium.rows[optionalTitle + 4], ["体检福利 / Wellness Benefits", "3,000元 / CNY3,000", 2472]);
   assert.deepEqual(premium.merges, ["A1:C1", `A${optionalTitle + 1}:C${optionalTitle + 1}`]);
+});
+
+test("多方案 TOB 按方案列并列展示，不重复垂直方案块", () => {
+  const model = core.buildWorkbookModel({
+    mode: "compare",
+    variants: [variant("mainland", "P201"), variant("worldwide", "P4WW")],
+    selectedPlanCodes: ["P201", "P4WW"],
+    people: [],
+  });
+  const tob = model.sheets.find(sheet => sheet.name === "保险责任TOB");
+  assert.deepEqual(tob.widths, [34.796875, 48.19921875, 22.796875, 24.796875, 22.796875, 24.796875]);
+  assert.deepEqual(tob.rows[0], ["保险责任\nTable of Benefits", "", "", "", "", ""]);
+  assert.match(tob.rows[1][2], /P201/);
+  assert.match(tob.rows[1][4], /P402/);
+  assert.equal(tob.rows.every(row => row.length <= 6), true);
+  assert.equal(tob.rows.filter(row => String(row[0]).includes("方案 2")).length, 0);
+  assert.equal(tob.rows.filter(row => row[0] === "福利责任 Benefit").length, 1);
+  assert.ok(tob.merges.includes("A1:F1"));
+
+  const coverageArea = tob.rows.find(row => String(row[0]).includes("保障区域"));
+  assert.equal(coverageArea.length, 6);
+  assert.match(coverageArea[2], /中国大陆/);
+  assert.match(coverageArea[4], /全球/);
 });

@@ -1055,6 +1055,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return detail.pending ? "单独核保 / 待人工费率" : detail.value;
   }
 
+  function tobCoverage(item, variant) {
+    const plan = getPlan(variant?.planCode);
+    const selected = isOptionalSelected(variant, item);
+    let coverage = selected || !["maternity", "wellness", "dental", "vision"].includes(item.section)
+      ? item.planValues[plan?.code] ?? ""
+      : "不涵盖\nNot Covered";
+    if (item.benefitId === "POLICY_COPAY") coverage = selectedCopay(variant).coverage;
+    if (item.benefitId === "NON_CATASTROPHIC_PEC" && variant.preExisting === "fmu") coverage = selectedPreExisting(variant).description;
+    return coverage;
+  }
+
   function buildTobBlock(rows, rowStyles, merges, variant, index, state, title = false) {
     const plan = getPlan(variant?.planCode);
     const titleRow = rows.length + 1;
@@ -1082,14 +1093,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         merges.push(`A${sectionRow}:B${sectionRow}`, `C${sectionRow}:D${sectionRow}`);
         previousSection = item.section;
       }
-      const selected = isOptionalSelected(variant, item);
-      let coverage = selected || !["maternity", "wellness", "dental", "vision"].includes(item.section)
-        ? item.planValues[plan?.code] ?? ""
-        : "不涵盖\nNot Covered";
-      if (item.benefitId === "POLICY_COPAY") coverage = selectedCopay(variant).coverage;
-      if (item.benefitId === "NON_CATASTROPHIC_PEC" && variant.preExisting === "fmu") coverage = selectedPreExisting(variant).description;
       const benefitRow = rows.length + 1;
-      rows.push([benefitDisplayName(item), "", coverage, "", ""]);
+      rows.push([benefitDisplayName(item), "", tobCoverage(item, variant), "", ""]);
       rowStyles.push("body");
       merges.push(`A${benefitRow}:B${benefitRow}`, `C${benefitRow}:D${benefitRow}`);
     });
@@ -1103,7 +1108,75 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return { name: "保险责任TOB", rows, rowStyles, widths: [34.796875, 48.19921875, 22.796875, 24.796875, 11], merges };
   }
 
+  function buildParallelTobSheet(state, variants) {
+    const rows = [];
+    const rowStyles = [];
+    const merges = [];
+    const columnCount = 2 + variants.length * 2;
+    const blanks = count => Array.from({ length: count }, () => "");
+    const lastColumn = columnName(columnCount - 1);
+    const planPair = index => [columnName(2 + index * 2), columnName(3 + index * 2)];
+    const addMergedMetaRow = (label, values) => {
+      const row = rows.length + 1;
+      rows.push([label, "", ...values.flatMap(value => [value, ""])]);
+      rowStyles.push("meta");
+      merges.push(`A${row}:B${row}`);
+      values.forEach((_, index) => {
+        const [first, second] = planPair(index);
+        merges.push(`${first}${row}:${second}${row}`);
+      });
+    };
+
+    rows.push(["保险责任\nTable of Benefits", ...blanks(columnCount - 1)]);
+    rowStyles.push("title");
+    merges.push(`A1:${lastColumn}1`);
+    addMergedMetaRow("计划 Plan", variants.map(variant => proposalPlanLabel(variant.planCode)));
+    addMergedMetaRow("区域 Area", variants.map(variant => getPlan(variant.planCode)?.area || ""));
+    addMergedMetaRow("方案调整选择\nPlan Change Options", variants.map(variant => selectedPlanChangeLines(variant, state).join("\n")));
+
+    const headerRow = rows.length + 1;
+    rows.push(["福利责任 Benefit", "", ...variants.flatMap(() => ["赔付限额/责任\nCoverage and Limit", ""])]);
+    rowStyles.push("header");
+    merges.push(`A${headerRow}:B${headerRow}`);
+    variants.forEach((_, index) => {
+      const [first, second] = planPair(index);
+      merges.push(`${first}${headerRow}:${second}${headerRow}`);
+    });
+
+    let previousSection = null;
+    BENEFIT_DATA.forEach(item => {
+      if (item.section !== previousSection) {
+        const sectionRow = rows.length + 1;
+        rows.push([SOURCE_SECTIONS[item.section], ...blanks(columnCount - 1)]);
+        rowStyles.push("section");
+        merges.push(`A${sectionRow}:${lastColumn}${sectionRow}`);
+        previousSection = item.section;
+      }
+      const benefitRow = rows.length + 1;
+      rows.push([
+        benefitDisplayName(item),
+        "",
+        ...variants.flatMap(variant => [tobCoverage(item, variant), ""]),
+      ]);
+      rowStyles.push("body");
+      merges.push(`A${benefitRow}:B${benefitRow}`);
+      variants.forEach((_, index) => {
+        const [first, second] = planPair(index);
+        merges.push(`${first}${benefitRow}:${second}${benefitRow}`);
+      });
+    });
+
+    return {
+      name: "保险责任TOB",
+      rows,
+      rowStyles,
+      widths: [34.796875, 48.19921875, ...variants.flatMap(() => [22.796875, 24.796875])],
+      merges,
+    };
+  }
+
   function buildCombinedTobSheet(state, variants) {
+    if (variants.length > 1) return buildParallelTobSheet(state, variants);
     const rows = [];
     const rowStyles = [];
     const merges = [];

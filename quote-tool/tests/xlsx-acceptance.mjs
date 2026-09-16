@@ -117,6 +117,38 @@ const fixedCases = [
       assert.match(pecRow[2], /不承担一切既往症/);
     },
   },
+  {
+    name: "多方案 TOB 横向并列输出",
+    check() {
+      const state = {
+        mode: "compare",
+        variants: [variant("greaterChina", "P201"), variant("worldwide", "P4WW")],
+        selectedPlanCodes: ["P201", "P4WW"],
+        people: [],
+      };
+      const model = core.buildWorkbookModel(state);
+      const tob = model.sheets.find(sheet => sheet.name === "保险责任TOB");
+      assert.deepEqual(tob.widths, [34.796875, 48.19921875, 22.796875, 24.796875, 22.796875, 24.796875]);
+      assert.match(tob.rows[1][2], /P201/);
+      assert.match(tob.rows[1][4], /P402/);
+      assert.equal(tob.rows.filter(row => String(row[0]).includes("方案 2")).length, 0);
+      assert.ok(tob.merges.includes("C4:D4"));
+      assert.ok(tob.merges.includes("E4:F4"));
+
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.aoa_to_sheet(tob.rows);
+      worksheet["!merges"] = tob.merges.map(ref => XLSX.utils.decode_range(ref));
+      worksheet["!cols"] = tob.widths.map(width => ({ wch: width }));
+      XLSX.utils.book_append_sheet(workbook, worksheet, tob.name);
+      const bytes = XLSX.write(workbook, { bookType: "xlsx", type: "buffer", compression: true, cellStyles: true });
+      const readBack = XLSX.read(bytes, { type: "buffer", cellStyles: true });
+      const rows = XLSX.utils.sheet_to_json(readBack.Sheets[tob.name], { header: 1, raw: false });
+      assert.equal(rows[0][0], "保险责任\nTable of Benefits");
+      assert.match(rows[1][2], /P201/);
+      assert.match(rows[1][4], /P402/);
+      assert.equal(rows.filter(row => String(row[0]).includes("方案 2")).length, 0);
+    },
+  },
 ];
 
 fixedCases.forEach(testCase => { testCase.check(); console.log(`PASS ${testCase.name}`); });
