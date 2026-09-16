@@ -118,6 +118,24 @@ test("Excel 样式字体和边框遵循 OOXML 子节点顺序，避免整份 sty
   });
 });
 
+test("TOB 合并区域内的空白单元格也必须继承同一边框样式", () => {
+  const helperStart = app.indexOf("function mergedColumnWidth");
+  const helperEnd = app.indexOf("async function styleWorkbookBytes", helperStart);
+  const styleWorksheetXml = new Function(`${app.slice(helperStart, helperEnd)}; return styleWorksheetXml;`)();
+  const sheet = {
+    name: "保险责任TOB",
+    rows: [[], ["福利责任 Benefit", "", "赔付限额/责任 Coverage and Limit", "", "赔付限额/责任 Coverage and Limit", ""]],
+    rowStyles: ["title", "header"],
+    merges: ["A2:B2", "C2:D2", "E2:F2"],
+  };
+  const xml = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:F2"/><sheetData><row r="2"><c r="A2" t="str"><v>福利责任 Benefit</v></c><c r="B2"/><c r="C2" t="str"><v>赔付限额/责任 Coverage and Limit</v></c><c r="D2"/><c r="E2" t="str"><v>赔付限额/责任 Coverage and Limit</v></c><c r="F2"/></row></sheetData></worksheet>';
+  const styled = styleWorksheetXml(xml, sheet);
+
+  ["A2", "B2", "C2", "D2", "E2", "F2"].forEach(ref => {
+    assert.match(styled, new RegExp(`<c\\b[^>]*r="${ref}"[^>]*\\bs="2"`), `${ref} 未继承 TOB 表头边框样式`);
+  });
+});
+
 test("Proposal 导出中的金额单元格使用金额格式，年龄仍保持整数", () => {
   const helperStart = app.indexOf("function isCurrencyCell");
   const helperEnd = app.indexOf("function applyWorksheetPrintLayout", helperStart);

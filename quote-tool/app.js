@@ -682,10 +682,18 @@
       const rowIndex = Number(refMatch[2]) - 1;
       const columnIndex = columnIndexFromName(refMatch[1]);
       const value = sheet.rows?.[rowIndex]?.[columnIndex];
-      if (value === "" || value === null || value === undefined) return opening;
+      const merge = (sheet.merges || []).map(ref => String(ref).match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/)).find(match => {
+        if (!match || Number(match[2]) !== rowIndex + 1 || Number(match[4]) !== rowIndex + 1) return false;
+        const start = columnIndexFromName(match[1]);
+        const end = columnIndexFromName(match[3]);
+        return columnIndex >= start && columnIndex <= end;
+      });
+      if ((value === "" || value === null || value === undefined) && !merge) return opening;
+      const styleColumnIndex = merge ? columnIndexFromName(merge[1]) : columnIndex;
+      const styleValue = sheet.rows?.[rowIndex]?.[styleColumnIndex];
       const kind = workbookRowKind(sheet, rowIndex);
-      const numberFormat = isCurrencyCell(sheet, rowIndex, value, columnIndex) ? "currency" : typeof value === "number" ? "integer" : "general";
-      const styleId = styleIdFor(kind, columnIndex === 0, numberFormat);
+      const numberFormat = isCurrencyCell(sheet, rowIndex, styleValue, styleColumnIndex) ? "currency" : typeof styleValue === "number" ? "integer" : "general";
+      const styleId = styleIdFor(kind, styleColumnIndex === 0, numberFormat);
       const styledAttributes = /\bs="[^\"]*"/.test(attributes)
         ? attributes.replace(/\bs="[^\"]*"/, `s="${styleId}"`)
         : `${attributes} s="${styleId}"`;
