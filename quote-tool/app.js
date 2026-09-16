@@ -592,7 +592,7 @@
 
   function buildStylesXml() {
     const color = value => `FF${value}`;
-    const font = (name, size, bold, rgb) => `<font>${bold ? "<b/>" : ""}<sz val="${size}"/><color rgb="${color(rgb)}"/><name val="${name}"/></font>`;
+    const font = (name, size, bold, rgb) => `<font>${bold ? "<b/>" : ""}<sz val="${size}"/><color rgb="${color(rgb)}"/><name val="${name}"/><family val="3"/><charset val="134"/></font>`;
     const fill = rgb => {
       if (rgb === "none") return "<fill><patternFill patternType=\"none\"/></fill>";
       if (rgb === "gray125") return "<fill><patternFill patternType=\"gray125\"/></fill>";
@@ -601,16 +601,16 @@
     const border = (top = null, bottom = null, left = null, right = null, rgb = WORKBOOK_COLORS.line) => `<border>${left ? `<left style="${left}"><color rgb="${color(rgb)}"/></left>` : "<left/>"}${right ? `<right style="${right}"><color rgb="${color(rgb)}"/></right>` : "<right/>"}${top ? `<top style="${top}"><color rgb="${color(rgb)}"/></top>` : "<top/>"}${bottom ? `<bottom style="${bottom}"><color rgb="${color(rgb)}"/></bottom>` : "<bottom/>"}<diagonal/></border>`;
     const xf = (fontId, fillId, borderId, numFmtId = 0, horizontal = "left", vertical = "top", applyNumberFormat = false) => `<xf numFmtId="${numFmtId}" fontId="${fontId}" fillId="${fillId}" borderId="${borderId}" xfId="0" applyAlignment="1"${applyNumberFormat ? " applyNumberFormat=\"1\"" : ""}><alignment horizontal="${horizontal}" vertical="${vertical}" wrapText="1"/></xf>`;
     const fonts = [
-      font("Aptos", 10, false, WORKBOOK_COLORS.ink),
-      font("Aptos Display", 15, true, WORKBOOK_COLORS.white),
-      font("Aptos", 10, true, WORKBOOK_COLORS.blue),
-      font("Aptos", 10, true, WORKBOOK_COLORS.blue),
-      font("Aptos", 10, true, WORKBOOK_COLORS.blue),
-      font("Aptos", 10, false, WORKBOOK_COLORS.ink),
-      font("Aptos", 10, true, WORKBOOK_COLORS.ink),
-      font("Aptos", 10, false, WORKBOOK_COLORS.ink),
-      font("Aptos", 11, true, WORKBOOK_COLORS.totalInk),
-      font("Aptos", 10, true, WORKBOOK_COLORS.discountInk),
+      font("OPPOSans R", 10, false, WORKBOOK_COLORS.ink),
+      font("OPPOSans R", 15, true, WORKBOOK_COLORS.white),
+      font("OPPOSans R", 10, true, WORKBOOK_COLORS.blue),
+      font("OPPOSans R", 10, true, WORKBOOK_COLORS.blue),
+      font("OPPOSans R", 10, true, WORKBOOK_COLORS.blue),
+      font("OPPOSans R", 10, false, WORKBOOK_COLORS.ink),
+      font("OPPOSans R", 10, true, WORKBOOK_COLORS.ink),
+      font("OPPOSans R", 10, false, WORKBOOK_COLORS.ink),
+      font("OPPOSans R", 11, true, WORKBOOK_COLORS.totalInk),
+      font("OPPOSans R", 10, true, WORKBOOK_COLORS.discountInk),
     ].join("");
     const fills = ["none", "gray125", WORKBOOK_COLORS.navy, WORKBOOK_COLORS.header, WORKBOOK_COLORS.section, WORKBOOK_COLORS.soft, WORKBOOK_COLORS.total, WORKBOOK_COLORS.discount, WORKBOOK_COLORS.white].map(fill).join("");
     const borders = [

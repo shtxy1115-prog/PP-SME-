@@ -104,8 +104,8 @@ test("Excel 样式字体和边框遵循 OOXML 子节点顺序，避免整份 sty
   const helperEnd = app.indexOf("function applyWorksheetPrintXml", helperStart);
   const buildStylesXml = new Function(`${app.slice(helperStart, helperEnd)}; return buildStylesXml;`)();
   const stylesXml = buildStylesXml();
-  assert.match(stylesXml, /<font><b\/><sz val="15"\/><color rgb="FFFFFFFF"\/><name val="Aptos Display"\/><\/font>/);
-  assert.doesNotMatch(stylesXml, /<font><name val="Aptos Display"\/><sz val="15"\/><b\/><color rgb="FFFFFFFF"\/><\/font>/);
+  assert.match(stylesXml, /<font><b\/><sz val="15"\/><color rgb="FFFFFFFF"\/><name val="OPPOSans R"\/><family val="3"\/><charset val="134"\/><\/font>/);
+  assert.doesNotMatch(stylesXml, /<font><name val="Aptos Display"\/>/);
   assert.match(stylesXml, /<fill><patternFill patternType="solid"><fgColor rgb="FF143B72"/);
   const bordersXml = stylesXml.match(/<borders\b[^>]*>([\s\S]*?)<\/borders>/)?.[1] || "";
   const borders = Array.from(bordersXml.matchAll(/<border>([\s\S]*?)<\/border>/g), match => match[1]);
@@ -116,6 +116,17 @@ test("Excel 样式字体和边框遵循 OOXML 子节点顺序，避免整份 sty
     assert.ok(childPositions.every(position => position >= 0), `border ${index} 缺少标准子节点`);
     assert.deepEqual(childPositions, [...childPositions].sort((left, right) => left - right), `border ${index} 子节点顺序无效`);
   });
+});
+
+test("TOB 动态样式使用可显示中文的 Proposal 字体", () => {
+  const helperStart = app.indexOf("const WORKBOOK_COLORS");
+  const helperEnd = app.indexOf("function applyWorksheetPrintXml", helperStart);
+  const buildStylesXml = new Function(`${app.slice(helperStart, helperEnd)}; return buildStylesXml;`)();
+  const stylesXml = buildStylesXml();
+
+  assert.match(stylesXml, /<font><b\/><sz val="15"\/><color rgb="FFFFFFFF"\/><name val="OPPOSans R"\/><family val="3"\/><charset val="134"\/><\/font>/);
+  assert.match(stylesXml, /<font><sz val="10"\/><color rgb="FF18324A"\/><name val="OPPOSans R"\/><family val="3"\/><charset val="134"\/><\/font>/);
+  assert.doesNotMatch(stylesXml, /<name val="Aptos"\/>/);
 });
 
 test("TOB 合并区域内的空白单元格也必须继承同一边框样式", () => {
