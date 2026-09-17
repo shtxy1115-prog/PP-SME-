@@ -579,6 +579,59 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     makeBenefit({ benefitId: "VISION", section: "vision", cnName: "眼科检查及眼镜/隐形眼镜", enName: "Eye examination and glasses/contact lenses", cnDescription: "每一保单年度一次眼科检查及一副框架眼镜或隐形眼镜", enDescription: "One eye examination and one pair of glasses or contact lenses per policy year", baseValues: { P1: "1,000元\nCNY 1,000", P2: "1,000元\nCNY 1,000", P3: "1,000元\nCNY 1,000", P4: "1,000元\nCNY 1,000" }, sourceRow: 87 }),
   ]);
 
+  /*
+   * User-confirmed fixed TOB responsibility display text, based on the
+   * supplied final proposal. This is presentation-only; planValues and all
+   * coverage calculations remain unchanged.
+   */
+  const TOB_DISPLAY_OVERRIDES = Object.freeze({
+    COVERAGE_AREA: "保障区域\nCoverage Area",
+    EMERGENCY_TREATMENT: "紧急医疗\nEmergency treatment\n\n保险人对在保障地域以外发生的紧急医疗，被保险人在对应保障地域以外地区发生的保险责任范围内的费用也提供保险保障\nThis benefit provides coverage for the medically necessary and reasonable expenses of emergency medical treatments outside the area of coverage",
+    DIRECT_BILLING: "直付服务\nDirect Billing Service",
+    POLICY_COPAY: "自付比例\nPolicy Co-payment\n\n自付比例指的是被保险人发生保险责任内费用先扣除免赔额（如有）后由被保险人承担的比例\nThe policy co-payment is a fixed percentage of covered medical expenses the member will pay for treatment. The policy co-payment applies after the deductible is met",
+    OUT_OF_POCKET_MAXIMUM: "自付限额\nOut-of-Pocket Maximum\n\n保险期间内，被保险人根据自付比例（非0%），按前述比例承担的保险责任内费用上限。自付额上限仅适用自付比例的费用累计\nThe out-of-pocket maximum is the amount of covered medical expenses the member will pay in Policy Co-payment during the Policy Period before any benefits are paid in full under the policy. The out-of-pocket maximum only applies to policy co-payment",
+    COMPANION_BED: "加床费\nCompanion Bed\n\n未满十八周岁附属被保险人住院期间其父亲或者母亲陪同住院加床费，女性被保险人住院期间其出生未满十六周的新生婴儿住院加床费\nFor a parent accompanying a hospitalized insured child under 18 years of age and for a baby aged under 16 weeks accompanying a hospitalized female insured person",
+    INPATIENT_DIAGNOSTICS: "检查费、药品费、化验费、吸氧费，输血、血浆、血浆扩容药物以及所有相关化验、操作设备和服务费用、电子喉镜检查费\nExaminations, medication and Prescription, laboratory tests, oxygen, blood transfusions, plasma, plasma expansion drugs, and all related tests, operating equipment and service fee and electronic laryngoscopy examination Fee",
+    INPATIENT_SURGERY: "住院手术费\nInpatient Surgery\n\n手术费、手术室和恢复室费,手术敷料费、手术医师费和麻醉师费、手术耗材费等\nSurgery Fee, Operating theatre and recovery room, cost of surgical dressing, surgeon and Anesthesiologist Fee and Surgery supplies and dressings",
+    RECONSTRUCTIVE_SURGERY: "矫形改造手术费\nReconstructive Surgery\n\n因保险期间内遭受意外伤害或患疾病需要接受矫形改造手术恢复肢体功能或容貌的医学必需且合理的费用。\nThe benefit refers to medically necessary and reasonable expenses for inpatient orthopedic surgery, due to accidental injury occurred during the policy period or illness, to restore the function of the limb or its appearance",
+    INPATIENT_SPECIAL_TREATMENT: "放射、呼吸、化学、物理、职业治疗费\nRadiation, respiratory, chemotherapy, physical and occupational therapy \n\n住院特殊治疗费：医学必需且合理的住院特殊治疗费用，包括但不限于：1.放射治疗费；2.呼吸治疗费；3.化学治疗费；4.物理治疗、职业疗法费。（含恶性肿瘤非手术治疗、质子重离子放疗） Inpatient Special Treatment Fees: Medically necessary and reasonable expenses for inpatient special treatment, including but not limited to: 1. radiation therapy fee; 2. respiratory therapy fee; 3. chemotherapy fee; 4. physical therapy and occupational therapy fee.(including non-surgical treatment of malignant tumors, and proton and heavy-ion radiotherapy)",
+    ORGAN_TRANSPLANT: "器官、骨髓移植费\nOrgan and Bone Marrow Transplantation Fee\n\n被保险人作为受体接受器官、骨髓移植所产生的医学必需且合理的费用\nMedically necessary and reasonable expenses incurred by the Insured Person as a recipient of an organ or bone marrow transplant.",
+    DIAGNOSTIC_LAB: "检查费和化验费：医学必需且合理的化验费及检查费，包括但不限于血液检查、尿检、X光检查、超声波检查等。\nDiagnostic and Laboratory Tests: Medically necessary and reasonable expenses for laboratory tests and examinations, including but not limited to blood tests, urine tests, X-ray examinations, and ultrasound examinations.",
+    ADVANCED_IMAGING: "大型检查费：医学必需且合理的、由医生开具的大型检查费用，包括但不限于：1.计算机断层扫描费；2.正电子发射计算机断层扫描费；3.核磁共振检查费；4.内窥镜检查费（如, 胃镜检查, 结肠镜检查, 膀胱镜检查, 阴道镜检查）；5.磁共振血管成像费；6.计算机辅助断层成像费；7.消化道造影费\nAdvanced Imagining: Medically necessary and reasonable expenses for advanced imaging tests prescribed by a doctor, including but not limited to: 1. CT: Computed tomography scan; 2. PET: Positron emission tomography; 3. MRI: Magnetic resonance imaging; 4. Endoscopy (e.g., gastroscopy, colonoscopy, cystoscopy, colposcopy); 5. MRA: Magnetic Resonance Angiogram; 6. CTA: CT angiography scan; 7.GI scan: gastrointestinal radiology",
+    OUTPATIENT_SURGERY: "门诊手术费：手术医师费和麻醉师费、手术室和恢复室费\nOut-patient Surgery: Operating theatre and recovery room、surgeon and Anesthetists Fee",
+    THERAPY: "理疗费\nTherapeutic Services\n\n医学必需且合理的物理治疗、美式脊椎矫正、职业疗法、语言治疗，电疗等费用（含挂号费、诊疗费及治疗费）\nThis benefit refers to medically necessary and reasonable expenses for physiotherapy, physiotherapist evaluation fee, chiropractic therapy, vocational therapy, speech therapy, occupational therapy, and electrotherapy (Including registration fee, diagnosis and treatment fee, and therapy fee)",
+    TCM_HOMEOPATHY: "传统中医治疗和顺势疗法费\nTraditional Chinese Medicine Treatment and Homeopathy\n\n针对可赔付的疾病，由具有相应医疗资质的专业医师在医疗机构实施的医学必需且合理的传统中医治疗和顺势疗法费用，包括但不限于中医针灸、推拿、拔罐、中药外敷、小针刀治疗，以及顺势疗法\nTraditional Chinese Medicine Treatment and Homeopathy: Medically necessary and reasonable expenses for Traditional Chinese Medicine treatment and homeopathy provided by professionally qualified practitioners at a medical institution for covered illnesses, including but not limited to acupuncture, Tuina, Cupping, Chinese medicine for external, Needle-knife therapy, Homeopathy",
+    PRESCRIBED_HERBS: "中草药费\nPrescribed Traditional Chinese Medicine\n\n注册中医医师处方的医学必需且合理的中草药费用\nMedically necessary and reasonable expenses for Chinese herbal medicine prescribed by a registered Traditional Chinese Medicine practitioner.",
+    EMERGENCY_DENTAL: "牙科意外伤害治疗费\nEmergency Dental Treatment\n\n对原本完整无损、未经过任何医疗的牙齿因遭受意外伤害而受损或缺失，在紧急治疗期间接受治疗所产生的医学必需且合理的费用。\nMedically necessary and reasonable expenses incurred for treatment received during the emergency visit for damage to or loss of natural teeth that were previously sound and had not received any prior dental treatment, caused by accidental injury.",
+    OUTPATIENT_CANCER_DIALYSIS: "门诊肾透析、门诊恶性肿瘤电疗、化疗或放疗\nOut-Patient Kidney Dialysis and Out-patient Cancer Treatment including Electrotherapy, Chemotherapy and Radiotherapy",
+    PROFESSIONAL_NURSING: "专业护理费\nNursing Fee\n\n指为在一定程度上治疗或者减缓病症，医师处方要求的、仅专业护士才能提供的、每日至少持续四个小时的住院或者门诊护理费\nInpatient or outpatient care for at least four hours a day prescribed by a physician and provided by a professional nurse in order to treat or alleviate a condition to a certain extent",
+    DME: "耐用医疗设备购买或租赁费\nDurable Medical Equipment (Purchase or Rental)\n\n医师处方要求的、满足基本医疗需要的康复设备、矫形支具以及其他耐用医疗设备的购买或租赁费用（以相应符合通常惯例水平的购买价格为上限），以及修理、更换费。康复设备和矫形支具包括但不限于腿、臂、背和颈支具，人造腿、臂、眼。\nMedically necessary and reasonable expenses for the purchase or rental of rehabilitation equipment, orthopedic braces, and other durable medical equipment as prescribed by a physician to meet basic medical needs (subject to  the purchase price that is consistent with the usual customary level），as well as repair and replacement fees. Rehabilitation equipment and orthotic braces include but are not limited to leg, arm, back, and neck braces, as well as artificial legs, arms, and eyes.",
+    BREAST_CERVICAL_SCREENING: "乳腺癌筛查和宫颈癌筛查\nBreast Cancer Screening and Cervical Cancer Screening\n\n每一保险年度一次乳房X线照片及一次子宫颈抹片等医学必需且合理的癌症筛查费用（限女性被保险人）\nMedically necessary and reasonable expenses for one mammogram and one Pap smear per policy year (limited to female Insured Persons).",
+    PROSTATE_SCREENING: "前列腺癌筛查\nProstate Cancer Screening\n\n每一保险年度一次前列腺特异性抗原检查等医学必需且合理的癌症筛查费用（限50岁以上男性被保险人）\nProstate Cancer Screening: Medically necessary and reasonable expenses for one prostate specific antigen (PSA) test per policy year (limited to male Insured Persons aged 50 or above).",
+    FAMILY_HISTORY_SCREENING: "经医师推荐的家族疾病筛查费\nScreenings Due to Family Medical History\n\n经医师推荐、和家族病史有关的医学必需且合理的筛查费用，包括化验、检查、基因检测费及医生费。家族病是指某种表现出家族聚集现象的疾病，即一个家族（包括直系亲属、旁系亲属）中多个成员患有同一种疾病，不包括因饮食、居住等相同环境因素导致多个成员患有相同疾病的情形。\nMedically necessary and reasonable expenses for screening related to family medical history as recommended by a physician, including laboratory tests, examinations, genetic testing fees, and doctor's fees. A family disease refers to a disease that exhibits familial aggregation — that is, a condition in which multiple members of a family (including both lineal and collateral relatives) suffer from the same disease, excluding cases where multiple family members develop the same disease as a result of shared environmental factors such as diet and living conditions.",
+    MATERNITY_CHILDBIRTH: "孕产费\nMaternity and Childbirth Benefit\n\n每次怀孕分娩费，包括产前检查费、妊娠期内医师处方开具的维生素和钙剂费、超声波检查费、早产费、顺产费、医学必需剖腹产费、麻醉费、产后复查费、流产费\nThe cost of delivery for each pregnancy includes prenatal examination, vitamin and calcium supplements prescribed by doctors during pregnancy, ultrasound examination, premature delivery, vaginal delivery, medically necessary caesarean section, anesthesia, postpartum checkup and abortion",
+    PREGNANCY_COMPLICATIONS: "妊娠并发症治疗费\nComplications of Pregnancy",
+    ROUTINE_EXAMS: "每年一次全身体检费以及相关检查化验费，常规检查化验费\nRoutine Exams, Annual Check-ups",
+    INFLUENZA_VACCINE: "流感疫苗\nInfluenza Vaccine\n\n仅限优选医疗机构（和睦家）\nPreferred providers only（UFH）",
+    DENTAL_PREVENTIVE: "预防治疗费\nPreventive Treatment\n\n包括常规牙科检查、牙齿健康指导、涂氟治疗、洁齿和抛光（预防）、每一保险期间两次以下（含）牙齿清洁检查\n Routine examination, cleanings (twice a year), dental health instruction, fluoride treatment, scale and polish (Prophylaxis)",
+    DENTAL_BASIC: "基础治疗费\nBasic Treatment\n\n包括汞合金或复合树脂充填、简单拔牙、牙周刮治、根面平整费，以及相关口腔X光费 Amalgam or composite fillings, simple extractions, periodontal scaling, root planting and X-rays",
+    DENTAL_MAJOR: "重大治疗费\nMajor Treatment\n\n包括根管充填、根管治疗、牙冠和嵌体、桥式义齿（包括化验和麻醉费用）、智齿拔除费，以及相关口腔X光费\n root fillings, root canal, crowns and inlays, bridges (including laboratory and anesthetic fees), wisdom teeth extractions, and related pan oral x-ray",
+    DENTAL_ORTHODONTIC: "牙齿矫正\nOrthodontic Treatment\n\n 包括模型研究、牙齿印模、活动矫治器、固定矫治器（包括调整）、正畸拔牙、托槽的粘接、以及相关口腔 X光费\n study models, impressions, removable string appliances (braces), fixed appliances (including adjustments), extractions, re-cementing of brackets",
+    VISION: "1. 眼科检查费（每一保单年度一次）\nEye examination Fee once per policy year\n\n2. 每一保单年度一次框架眼镜费或隐性眼镜费\nOne pair of glasses or contact lenses",
+  });
+
+  const TOB_DISPLAY_INSERTS = Object.freeze({
+    HOSPICE_OUTPATIENT: Object.freeze([
+      Object.freeze({ kind: "benefit", text: "临终关怀费\nHospice Care\n\n指被保险人因患有疾病到终末期阶段（包括但不限于恶性肿瘤IV期、肾功能衰竭），医疗机构已停止对其原发疾病的治疗，仅以暂时缓解症状或维持生命为目的所产生的医疗费用，包括经医疗服务供应商批准在具有相应资质的临终关怀机构或医疗机构因临终关怀（包括但不限于姑息治疗）而实际产生的医疗费用。本福利下设门诊费用、住院费用两个子项，各子项限额分别见下表相应条款。\nMedically necessary and reasonable expenses for hospice care. This refers to medical expenses incurred when the Insured Person has a terminal-stage illness (including but not limited to Stage IV malignant tumor, renal failure)，the medical institution has ceased treating the original disease, and the medical expenses incurred solely for the purpose of temporarily alleviating symptoms or maintaining life include the actual medical expenses approved by the medical service provider and incurred at qualified hospice care institutions or medical institutions for end-of-life care (including but not limited to palliative care). This benefit includes two sub-items: outpatient expenses and hospitalization expenses. The limits for each sub-item are specified in the corresponding clauses in the table below." }),
+    ]),
+    BREAST_CERVICAL_SCREENING: Object.freeze([
+      Object.freeze({ kind: "section", text: "特殊检查费\nSpecial Examination Fee" }),
+    ]),
+    MENTAL_HEALTH_OUTPATIENT: Object.freeze([
+      Object.freeze({ kind: "section", text: "精神和心理障碍治疗费\nMental Health and Psychotherapeutic Treatment" }),
+    ]),
+  });
+
   const SOURCE_SECTIONS = Object.freeze({
     core: "核心责任 / Core Benefits",
     hospital: "医院范围与自付 / Hospital Scope and Co-payment",
@@ -586,7 +639,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     deductible: "免赔额与自付 / Deductibles and Co-payment",
     inpatient: "住院医疗 / Inpatient and Day-care Benefits",
     outpatient: "门诊医疗 / Outpatient Healthcare Benefits",
-    special: "特殊疾病与项目 / Special Disease and Medical Care Benefits",
+    special: "特殊疾病和特殊项目医疗保险责任\nSpecial Disease and Medical Care Benefits",
     assistance: "医疗及身故援助 / Medical Emergency and Death Assistance",
     maternity: "孕产和新生婴儿 / Maternity and Newborn Infant Care",
     wellness: "体检责任 / Wellness Benefits",
@@ -985,10 +1038,23 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function benefitDisplayName(item) {
+    if (TOB_DISPLAY_OVERRIDES[item.benefitId]) return TOB_DISPLAY_OVERRIDES[item.benefitId];
     const description = item.cnDescription !== item.cnName || item.enDescription !== item.enName
       ? `\n\n${item.cnDescription}\n${item.enDescription}`
       : "";
     return `${item.cnName}\n${item.enName}${description}`;
+  }
+
+  function forEachTobDisplayRow(callback) {
+    let previousSection = null;
+    BENEFIT_DATA.forEach(item => {
+      if (item.section !== previousSection) {
+        callback({ kind: "section", text: SOURCE_SECTIONS[item.section] });
+        previousSection = item.section;
+      }
+      (TOB_DISPLAY_INSERTS[item.benefitId] || []).forEach(callback);
+      callback({ kind: "benefit", item, text: benefitDisplayName(item) });
+    });
   }
 
   function selectedOptionLabel(variant, type) {
@@ -1084,17 +1150,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     rowStyles.push("header");
     merges.push(`A${headerRow}:B${headerRow}`, `C${headerRow}:D${headerRow}`);
 
-    let previousSection = null;
-    BENEFIT_DATA.forEach(item => {
-      if (item.section !== previousSection) {
+    forEachTobDisplayRow(displayRow => {
+      if (displayRow.kind === "section") {
         const sectionRow = rows.length + 1;
-        rows.push([SOURCE_SECTIONS[item.section], "", "", "", ""]);
+        rows.push([displayRow.text, "", "", "", ""]);
         rowStyles.push("section");
         merges.push(`A${sectionRow}:B${sectionRow}`, `C${sectionRow}:D${sectionRow}`);
-        previousSection = item.section;
+        return;
       }
       const benefitRow = rows.length + 1;
-      rows.push([benefitDisplayName(item), "", tobCoverage(item, variant), "", ""]);
+      rows.push([displayRow.text, "", displayRow.item ? tobCoverage(displayRow.item, variant) : "", "", ""]);
       rowStyles.push("body");
       merges.push(`A${benefitRow}:B${benefitRow}`, `C${benefitRow}:D${benefitRow}`);
     });
@@ -1143,20 +1208,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       merges.push(`${first}${headerRow}:${second}${headerRow}`);
     });
 
-    let previousSection = null;
-    BENEFIT_DATA.forEach(item => {
-      if (item.section !== previousSection) {
+    forEachTobDisplayRow(displayRow => {
+      if (displayRow.kind === "section") {
         const sectionRow = rows.length + 1;
-        rows.push([SOURCE_SECTIONS[item.section], ...blanks(columnCount - 1)]);
+        rows.push([displayRow.text, ...blanks(columnCount - 1)]);
         rowStyles.push("section");
         merges.push(`A${sectionRow}:${lastColumn}${sectionRow}`);
-        previousSection = item.section;
+        return;
       }
       const benefitRow = rows.length + 1;
       rows.push([
-        benefitDisplayName(item),
+        displayRow.text,
         "",
-        ...variants.flatMap(variant => [tobCoverage(item, variant), ""]),
+        ...variants.flatMap(variant => [displayRow.item ? tobCoverage(displayRow.item, variant) : "", ""]),
       ]);
       rowStyles.push("body");
       merges.push(`A${benefitRow}:B${benefitRow}`);

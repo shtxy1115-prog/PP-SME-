@@ -79,9 +79,12 @@ const fixedCases = [
       const tobText = XLSX.utils.sheet_to_json(readBack.Sheets["保险责任TOB"], { header: 1, raw: false }).flat().join("\n");
       assert.match(tobText, /理疗费/);
       assert.match(tobText, /PREGNANCY_COMPLICATIONS|妊娠并发症/);
-      assert.match(tobText, /门诊第6次起就诊自付20%/);
+      assert.match(tobText, /自付比例指的是被保险人发生保险责任内费用/);
+      assert.match(tobText, /特殊检查费/);
+      assert.match(tobText, /临终关怀费/);
       const quotationText = XLSX.utils.sheet_to_json(readBack.Sheets["报价 Quotation"], { header: 1, raw: false }).flat().join("\n");
       assert.match(quotationText, /方案调整选择/);
+      assert.match(quotationText, /门诊第6次起就诊自付20%/);
       assert.match(quotationText, /医疗保费下调6%/);
     },
   },

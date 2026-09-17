@@ -247,6 +247,35 @@ test("TOB 来自结构化 Benefit Data：共享责任不靠字符串前缀/合�
   assert.ok(core.HCP.length >= 20);
 });
 
+test("TOB 使用已确认的福利责任展示模板", () => {
+  const model = core.buildWorkbookModel({
+    mode: "compare",
+    variants: [variant("greaterChina", "P201"), variant("worldwide", "P4WW")],
+    selectedPlanCodes: ["P201", "P4WW"],
+    people: [],
+  });
+  const tob = model.sheets.find(sheet => sheet.name === "保险责任TOB");
+  const benefitText = text => tob.rows.find(row => String(row[0]).startsWith(text))?.[0];
+
+  assert.equal(tob.rows.length, 88);
+  assert.equal(benefitText("保障区域\nCoverage Area"), "保障区域\nCoverage Area");
+  assert.equal(
+    benefitText("紧急医疗\nEmergency treatment"),
+    "紧急医疗\nEmergency treatment\n\n保险人对在保障地域以外发生的紧急医疗，被保险人在对应保障地域以外地区发生的保险责任范围内的费用也提供保险保障\nThis benefit provides coverage for the medically necessary and reasonable expenses of emergency medical treatments outside the area of coverage",
+  );
+  assert.equal(
+    benefitText("自付比例\nPolicy Co-payment"),
+    "自付比例\nPolicy Co-payment\n\n自付比例指的是被保险人发生保险责任内费用先扣除免赔额（如有）后由被保险人承担的比例\nThe policy co-payment is a fixed percentage of covered medical expenses the member will pay for treatment. The policy co-payment applies after the deductible is met",
+  );
+  assert.ok(benefitText("临终关怀费\nHospice Care"));
+  assert.ok(tob.rows.some(row => row[0] === "特殊检查费\nSpecial Examination Fee"));
+  assert.ok(tob.rows.some(row => row[0] === "精神和心理障碍治疗费\nMental Health and Psychotherapeutic Treatment"));
+  assert.equal(
+    benefitText("1. 眼科检查费（每一保单年度一次）"),
+    "1. 眼科检查费（每一保单年度一次）\nEye examination Fee once per policy year\n\n2. 每一保单年度一次框架眼镜费或隐性眼镜费\nOne pair of glasses or contact lenses",
+  );
+});
+
 test("导出模型包含必需 sheets、状态/来源/共享责任与可解析单元格", () => {
   const model = core.buildWorkbookModel({
     companyCn: "测试团体",
