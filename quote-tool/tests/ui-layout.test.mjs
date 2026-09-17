@@ -129,6 +129,32 @@ test("TOB 动态样式使用可显示中文的 Proposal 字体", () => {
   assert.doesNotMatch(stylesXml, /<name val="Aptos"\/>/);
 });
 
+test("TOB 福利描述使用可读 OPPOSans 字体并为长文本预留自动换行高度", () => {
+  const helperStart = app.indexOf("const WORKBOOK_COLORS");
+  const helperEnd = app.indexOf("function applyWorksheetPrintXml", helperStart);
+  const buildStylesXml = new Function(`${app.slice(helperStart, helperEnd)}; return buildStylesXml;`)();
+  const stylesXml = buildStylesXml();
+  assert.match(stylesXml, /<font><b\/><sz val="11"\/><color rgb="FF3966CA"\/><name val="OPPOSans R"\/><family val="3"\/><charset val="134"\/><\/font>/);
+  assert.match(stylesXml, /<font><sz val="11"\/><color rgb="FF18324A"\/><name val="OPPOSans R"\/><family val="3"\/><charset val="134"\/><\/font>/);
+  assert.match(stylesXml, /<alignment horizontal="left" vertical="top" wrapText="1"\/>/);
+
+  const rowStart = app.indexOf("function mergedColumnWidth");
+  const rowEnd = app.indexOf("const WORKBOOK_COLORS", rowStart);
+  const rowHeight = new Function(`
+    const columnIndexFromName = name => Array.from(name).reduce((value, character) => value * 26 + character.charCodeAt(0) - 64, 0) - 1;
+    ${app.slice(rowStart, rowEnd)}
+    return rowHeight;
+  `)();
+  const longText = "紧急医疗\nEmergency treatment\n\n保险人对在保障地域以外发生的紧急医疗，被保险人在对应保障地域以外地区发生的保险责任范围内的费用也提供保险保障\nThis benefit provides coverage for the medically necessary and reasonable expenses of emergency medical treatments outside the area of coverage";
+  const sheet = {
+    name: "保险责任TOB",
+    widths: [34.796875, 48.19921875, 22.796875, 24.796875],
+    merges: ["A1:B1"],
+    rowStyles: ["body"],
+  };
+  assert.ok(rowHeight([longText, ""], sheet, 0) >= 130, "长福利描述的 TOB 行高不足以容纳自动换行后的中英文内容");
+});
+
 test("TOB 合并区域内的空白单元格也必须继承同一边框样式", () => {
   const helperStart = app.indexOf("function mergedColumnWidth");
   const helperEnd = app.indexOf("async function styleWorkbookBytes", helperStart);
@@ -143,7 +169,7 @@ test("TOB 合并区域内的空白单元格也必须继承同一边框样式", (
   const styled = styleWorksheetXml(xml, sheet);
 
   ["A2", "B2", "C2", "D2", "E2", "F2"].forEach(ref => {
-    assert.match(styled, new RegExp(`<c\\b[^>]*r="${ref}"[^>]*\\bs="2"`), `${ref} 未继承 TOB 表头边框样式`);
+    assert.match(styled, new RegExp(`<c\\b[^>]*r="${ref}"[^>]*\\bs="14"`), `${ref} 未继承 TOB 表头边框样式`);
   });
 });
 
