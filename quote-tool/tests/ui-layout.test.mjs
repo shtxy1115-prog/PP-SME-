@@ -155,6 +155,48 @@ test("TOB 福利描述使用可读 OPPOSans 字体并为长文本预留自动换
   assert.ok(rowHeight([longText, ""], sheet, 0) >= 130, "长福利描述的 TOB 行高不足以容纳自动换行后的中英文内容");
 });
 
+test("TOB 合并单元格为长中英文描述插入显式换行，避免 Excel 截断", () => {
+  const helperStart = app.indexOf("function mergedColumnWidth");
+  const helperEnd = app.indexOf("const WORKBOOK_COLORS", helperStart);
+  const helpers = new Function(`
+    const columnIndexFromName = name => Array.from(name).reduce((value, character) => value * 26 + character.charCodeAt(0) - 64, 0) - 1;
+    ${app.slice(helperStart, helperEnd)}
+    return { prepareDisplaySheet, rowHeight };
+  `)();
+  const nl = String.fromCharCode(10);
+  const policyText = [
+    "自付比例",
+    "Policy Co-payment",
+    "",
+    "自付比例指的是被保险人发生保险责任内费用先扣除免赔额（如有）后由被保险人承担的比例",
+    "The policy co-payment is a fixed percentage of covered medical expenses the member will pay for treatment. The policy co-payment applies after the deductible is met",
+  ].join(nl);
+  const outOfPocketText = [
+    "自付限额",
+    "Out-of-Pocket Maximum",
+    "",
+    "保险期间内，被保险人根据自付比例（非0%），按前述比例承担的保险责任内费用上限。自付额上限仅适用自付比例的费用累计",
+    "The out-of-pocket maximum is the amount of covered medical expenses the member will pay in Policy Co-payment during the Policy Period before any benefits are paid in full under the policy. The out-of-pocket maximum only applies to policy co-payment",
+  ].join(nl);
+  const sheet = {
+    name: "保险责任TOB",
+    rows: [[policyText, "", "标准自付比例 0%。\nStandard co-payment 0%."], [outOfPocketText, "", "无\nNo Maximum"]],
+    rowStyles: ["body", "body"],
+    widths: [34.796875, 48.19921875, 22.796875, 24.796875],
+    merges: ["A1:B1", "C1:D1", "A2:B2", "C2:D2"],
+  };
+  const displaySheet = helpers.prepareDisplaySheet(sheet);
+  const displayedPolicy = displaySheet.rows[0][0];
+  const displayedOutOfPocket = displaySheet.rows[1][0];
+
+  assert.ok(displayedPolicy.split(nl).length > policyText.split(nl).length, "自付比例英文描述没有被显式分行");
+  assert.ok(displayedOutOfPocket.split(nl).length > outOfPocketText.split(nl).length, "自付限额英文描述没有被显式分行");
+  assert.equal(displayedPolicy.replaceAll(nl, ""), policyText.replaceAll(nl, ""), "自付比例描述被换行逻辑改写或丢字");
+  assert.equal(displayedOutOfPocket.replaceAll(nl, ""), outOfPocketText.replaceAll(nl, ""), "自付限额描述被换行逻辑改写或丢字");
+  assert.ok(helpers.rowHeight(displaySheet.rows[0], displaySheet, 0) >= 130, "自付比例显示行高不足");
+  assert.ok(helpers.rowHeight(displaySheet.rows[1], displaySheet, 1) >= 170, "自付限额显示行高不足");
+});
+
 test("TOB 合并区域内的空白单元格也必须继承同一边框样式", () => {
   const helperStart = app.indexOf("function mergedColumnWidth");
   const helperEnd = app.indexOf("async function styleWorkbookBytes", helperStart);

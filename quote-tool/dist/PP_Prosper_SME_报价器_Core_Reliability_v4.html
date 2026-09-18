@@ -2169,9 +2169,63 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return widths.slice(start, end + 1).reduce((sum, width) => sum + (width || 24), 0);
   }
 
+  // Excel for Mac renders merged cells narrower than their summed XML column widths.
+  // Keep an explicit safety margin so long English lines do not clip at the right edge.
+  const TOB_TEXT_WRAP_FACTOR = 0.42;
+
+  function displayCharacterWidth(character) {
+    return /[^\u0000-\u00ff]/.test(character) ? 1 : 0.55;
+  }
+
+  function wrapDisplayLine(line, maxWidth) {
+    const wrapped = [];
+    let current = "";
+    let currentWidth = 0;
+    Array.from(line).forEach(character => {
+      const characterWidth = displayCharacterWidth(character);
+      while (current && currentWidth + characterWidth > maxWidth) {
+        const breakAt = Math.max(current.lastIndexOf(" "), current.lastIndexOf("\u3000"));
+        if (breakAt > 0) {
+          // Keep the separator at the start of the next line. Excel for Mac
+          // can treat a trailing space immediately before a manual line break
+          // as ordinary whitespace inside merged cells and rejoin the lines.
+          // Moving it preserves the original characters while making the
+          // display break effective.
+          wrapped.push(current.slice(0, breakAt));
+          current = current.slice(breakAt);
+          currentWidth = Array.from(current).reduce((sum, item) => sum + displayCharacterWidth(item), 0);
+        } else {
+          wrapped.push(current);
+          current = "";
+          currentWidth = 0;
+        }
+      }
+      current += character;
+      currentWidth += characterWidth;
+    });
+    if (current || !wrapped.length) wrapped.push(current);
+    return wrapped.join("\n");
+  }
+
+  function wrapDisplayText(value, width) {
+    const maxWidth = Math.max(10, width * TOB_TEXT_WRAP_FACTOR);
+    return String(value ?? "").split("\n").map(line => wrapDisplayLine(line, maxWidth)).join("\n");
+  }
+
+  function prepareDisplaySheet(sheet) {
+    if (!String(sheet?.name || "").includes("TOB")) return sheet;
+    return {
+      ...sheet,
+      rows: (sheet.rows || []).map((row, rowIndex) => row.map((value, columnIndex) => {
+        if (typeof value !== "string" || !value) return value;
+        return wrapDisplayText(value, mergedColumnWidth(sheet, rowIndex, columnIndex));
+      })),
+    };
+  }
+
   function rowHeight(row, sheet, rowIndex) {
     const isTob = String(sheet?.name || "").includes("TOB");
-    const widthFactor = isTob ? 0.82 : 0.9;
+    const widthFactor = isTob ? TOB_TEXT_WRAP_FACTOR : 0.9;
     const lines = row.reduce((max, value, columnIndex) => {
       const width = mergedColumnWidth(sheet, rowIndex, columnIndex);
       const lineCount = String(value ?? "").split("\n").reduce((count, line) => {
@@ -2448,9 +2502,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     if (!XLSX) { window.alert("离线 XLSX 组件未加载，无法导出。"); return; }
     const model = core.buildWorkbookModel(coreState());
+    const displayModel = { ...model, sheets: model.sheets.map(prepareDisplaySheet) };
     const workbook = XLSX.utils.book_new();
     workbook.Props = { Title: "PP & Prosper SME Quotation Core Reliability v4", Subject: "Offline quotation", Author: "PP & Prosper" };
-    model.sheets.forEach(sheet => {
+    displayModel.sheets.forEach(sheet => {
       const worksheet = XLSX.utils.aoa_to_sheet(sheet.rows);
       applyWorkbookLayout(worksheet, sheet);
       XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name.slice(0, 31));
@@ -2458,7 +2513,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const rawBytes = XLSX.write(workbook, { bookType: "xlsx", type: "array", compression: true, cellStyles: true });
     let bytes;
     try {
-      bytes = await styleWorkbookBytes(rawBytes, model);
+      bytes = await styleWorkbookBytes(rawBytes, displayModel);
     } catch (error) {
       console.error("Unable to apply workbook styling", error);
       window.alert("报价数据已生成，但 Excel 样式处理失败；请重试导出。业务计算未受影响。");
