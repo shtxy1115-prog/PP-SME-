@@ -130,6 +130,8 @@ test("TOB 动态样式使用可显示中文的 Proposal 字体", () => {
 });
 
 test("TOB 福利描述使用可读 OPPOSans 字体并为长文本预留自动换行高度", () => {
+  assert.match(app, /const MAX_EXCEL_ROW_HEIGHT_PT = 409\.5/);
+  assert.match(app, /Math\.min\(isTob \? MAX_EXCEL_ROW_HEIGHT_PT : 170/);
   const helperStart = app.indexOf("const WORKBOOK_COLORS");
   const helperEnd = app.indexOf("function applyWorksheetPrintXml", helperStart);
   const buildStylesXml = new Function(`${app.slice(helperStart, helperEnd)}; return buildStylesXml;`)();
@@ -222,14 +224,89 @@ test("Proposal 导出中的金额单元格使用金额格式，年龄仍保持�
   const quotation = {
     name: "报价 Quotation",
     rows: [
-      [], [], [], [], [],
-      ["医疗保费 / Medical Premium", 1000, "可选生育福利保费", 2000],
-      [], [], [], [], [],
+      ["报价保费汇总 / Premium Summary"],
+      ["保费项目 / Premium Item", "方案 1", "方案 2"],
+      ["医疗保费 / Medical Premium", 1000, 2000],
+      ["最终保费 Total Premium", 1000, 2000],
+      ["人员保费明细 Member Premium Details"],
+      ["人员 / Member", "人员类型 / Type", "年龄 / Age", "方案 1 医疗保费", "方案 2 医疗保费"],
       ["1 · E1", "员工", 40, 1000, 2000],
     ],
   };
-  assert.equal(isCurrencyCell(quotation, 5, 1000, 1), true);
-  assert.equal(isCurrencyCell(quotation, 5, 2000, 3), true);
-  assert.equal(isCurrencyCell(quotation, 11, 40, 2), false);
-  assert.equal(isCurrencyCell(quotation, 11, 1000, 3), true);
+  assert.equal(isCurrencyCell(quotation, 2, 1000, 1), true);
+  assert.equal(isCurrencyCell(quotation, 2, 2000, 2), true);
+  assert.equal(isCurrencyCell(quotation, 6, 40, 2), false);
+  assert.equal(isCurrencyCell(quotation, 6, 1000, 3), true);
+});
+
+test("空英文名称单元格保留 Quotation 模板底色", () => {
+  const helperStart = app.indexOf("function mergedColumnWidth");
+  const helperEnd = app.indexOf("async function styleWorkbookBytes", helperStart);
+  const styleWorksheetXml = new Function(`${app.slice(helperStart, helperEnd)}; return styleWorksheetXml;`)();
+  const sheet = {
+    name: "报价 Quotation",
+    rows: [[], ["中文名称", "测试公司", "英文名称", "", "", "", "", ""]],
+    rowStyles: ["title", "meta"],
+    merges: ["D2:H2"],
+  };
+  const cells = ["D2", "E2", "F2", "G2", "H2"].map(ref => `<c r="${ref}"/>`).join("");
+  const xml = `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:H2"/><sheetData><row r="2"><c r="A2"/><c r="B2"/><c r="C2"/>${cells}</row></sheetData></worksheet>`;
+  const styled = styleWorksheetXml(xml, sheet);
+  ["D2", "E2", "F2", "G2", "H2"].forEach(ref => {
+    const cell = styled.match(new RegExp(`<c\\b[^>]*r="${ref}"[^>]*>`))?.[0] || "";
+    assert.match(cell, /s="5"/, `${ref} 空白英文名区域未应用模板值单元格底色`);
+  });
+});
+
+test("TOB 纵向共享限额合并区按完整宽度换行并继承边框", () => {
+  const helperStart = app.indexOf("function mergedColumnWidth");
+  const helperEnd = app.indexOf("const WORKBOOK_COLORS", helperStart);
+  const rowHelpers = new Function(`
+    const columnIndexFromName = name => Array.from(name).reduce((value, character) => value * 26 + character.charCodeAt(0) - 64, 0) - 1;
+    ${app.slice(helperStart, helperEnd)}
+    return mergedColumnWidth;
+  `)();
+  const sheet = {
+    name: "保险责任TOB",
+    rows: [[], ["理疗", "", "限额", ""], ["中医", "", "", ""], ["中草药", "", "", ""]],
+    widths: [34.796875, 48.19921875, 22.796875, 24.796875],
+    merges: ["A2:B2", "A3:B3", "A4:B4", "C2:D4"],
+  };
+  const mergedWidth = 22.796875 + 24.796875;
+  [1, 2, 3].forEach(rowIndex => {
+    assert.equal(rowHelpers(sheet, rowIndex, 2), mergedWidth);
+    assert.equal(rowHelpers(sheet, rowIndex, 3), mergedWidth);
+  });
+
+  const styleStart = app.indexOf("function mergedColumnWidth");
+  const styleEnd = app.indexOf("async function styleWorkbookBytes", styleStart);
+  const styleWorksheetXml = new Function(`${app.slice(styleStart, styleEnd)}; return styleWorksheetXml;`)();
+  const xml = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:D4"/><sheetData><row r="2"><c r="A2"/><c r="B2"/><c r="C2"/><c r="D2"/></row><row r="3"><c r="A3"/><c r="B3"/><c r="C3"/><c r="D3"/></row><row r="4"><c r="A4"/><c r="B4"/><c r="C4"/><c r="D4"/></row></sheetData></worksheet>';
+  const styled = styleWorksheetXml(xml, { ...sheet, rowStyles: ["title", "body", "body", "body"] });
+  ["C2", "D2", "C3", "D3", "C4", "D4"].forEach(ref => {
+    const cell = styled.match(new RegExp(`<c\\b[^>]*r="${ref}"[^>]*>`))?.[0] || "";
+    assert.match(cell, /s="19"/, `${ref} 未继承纵向合并区域的 TOB 责任单元格样式`);
+  });
+});
+
+test("临终关怀描述的福利名称格沿用精神心理障碍标题格式", () => {
+  const helperStart = app.indexOf("function mergedColumnWidth");
+  const helperEnd = app.indexOf("async function styleWorkbookBytes", helperStart);
+  const styleWorksheetXml = new Function(`${app.slice(helperStart, helperEnd)}; return styleWorksheetXml;`)();
+  const sheet = {
+    name: "保险责任TOB",
+    rows: [[], ["临终关怀费\nHospice Care", "", "", ""]],
+    rowStyles: ["title", "benefitHeading"],
+    merges: ["A2:B2", "C2:D2"],
+  };
+  const xml = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:D2"/><sheetData><row r="2"><c r="A2"/><c r="B2"/><c r="C2"/><c r="D2"/></row></sheetData></worksheet>';
+  const styled = styleWorksheetXml(xml, sheet);
+  ["A2", "B2"].forEach(ref => {
+    const cell = styled.match(new RegExp(`<c\\b[^>]*r="${ref}"[^>]*>`))?.[0] || "";
+    assert.match(cell, /s="15"/, `${ref} 未使用 Mental Health 标题样式`);
+  });
+  ["C2", "D2"].forEach(ref => {
+    const cell = styled.match(new RegExp(`<c\\b[^>]*r="${ref}"[^>]*>`))?.[0] || "";
+    assert.match(cell, /s="19"/, `${ref} 的赔付责任内容不应误用标题样式`);
+  });
 });

@@ -476,7 +476,7 @@
     const widths = sheet.widths || [];
     const merge = (sheet.merges || []).find(ref => {
       const match = String(ref).match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
-      if (!match || Number(match[2]) !== rowIndex + 1 || Number(match[4]) !== rowIndex + 1) return false;
+      if (!match || rowIndex + 1 < Number(match[2]) || rowIndex + 1 > Number(match[4])) return false;
       const start = columnIndexFromName(match[1]);
       const end = columnIndexFromName(match[3]);
       return columnIndex >= start && columnIndex <= end;
@@ -491,6 +491,7 @@
   // Excel for Mac renders merged cells narrower than their summed XML column widths.
   // Keep an explicit safety margin so long English lines do not clip at the right edge.
   const TOB_TEXT_WRAP_FACTOR = 0.42;
+  const MAX_EXCEL_ROW_HEIGHT_PT = 409.5;
 
   function displayCharacterWidth(character) {
     return /[^\u0000-\u00ff]/.test(character) ? 1 : 0.55;
@@ -556,7 +557,7 @@
     const safetyLines = isTob && lines >= 3 ? 1 : 0;
     const lineHeight = isTob ? 18 : 15;
     const padding = isTob ? 10 : 8;
-    return Math.min(300, Math.max(isTob ? 28 : 22, lineHeight * (lines + safetyLines) + padding));
+    return Math.min(MAX_EXCEL_ROW_HEIGHT_PT, Math.max(isTob ? 28 : 22, lineHeight * (lines + safetyLines) + padding));
   }
 
   const WORKBOOK_COLORS = Object.freeze({
@@ -594,8 +595,11 @@
     const label = (sheet.rows?.[rowIndex] || []).filter(cell => typeof cell === "string").join(" ");
     if (sheet.name === "费率 Premium" && rowIndex >= 6) return true;
     if (sheet.name === "报价 Quotation") {
-      if (rowIndex >= 5 && rowIndex <= 8 && (columnIndex === 1 || columnIndex === 3)) return true;
-      if (rowIndex >= 11 && columnIndex >= 3) return true;
+      const detailHeaderIndex = (sheet.rows || []).findIndex(row => String(row[0] || "").includes("人员 / Member"));
+      if (detailHeaderIndex >= 0 && rowIndex > detailHeaderIndex && columnIndex >= 3) return true;
+      const summaryHeaderIndex = (sheet.rows || []).findIndex(row => row[0] === "保费项目 / Premium Item");
+      const detailTitleIndex = (sheet.rows || []).findIndex(row => String(row[0] || "").includes("人员保费明细"));
+      if (summaryHeaderIndex >= 0 && rowIndex > summaryHeaderIndex && rowIndex < detailTitleIndex && columnIndex >= 1) return true;
     }
     if (/保费|Premium|费率|Rate|优惠|Discount|总额|Total/.test(label)) return true;
     return /保费|Premium|费率|Rate|优惠|Discount|总额|Total/.test(label);
@@ -629,7 +633,7 @@
       if (kind === "title") return { hpt: sheet.name.includes("TOB") ? Math.min(72, Math.max(56, computed)) : 38 };
       if (kind === "header") return { hpt: Math.min(82, Math.max(42, computed)) };
       if (kind === "section") return { hpt: Math.min(120, Math.max(28, computed)) };
-      return { hpt: Math.min(isTob ? 300 : 170, Math.max(kind === "meta" ? 26 : 28, computed)) };
+      return { hpt: Math.min(isTob ? MAX_EXCEL_ROW_HEIGHT_PT : 170, Math.max(kind === "meta" ? 26 : 28, computed)) };
     });
     applyWorksheetPrintLayout(worksheet, sheet);
   }
@@ -655,6 +659,7 @@
       if (kind === "title") return TOB_STYLE_IDS.title;
       if (kind === "header") return TOB_STYLE_IDS.header;
       if (kind === "section") return TOB_STYLE_IDS.section;
+      if (kind === "benefitHeading" && isLabel) return TOB_STYLE_IDS.section;
       if (kind === "meta") return numberFormat === "currency" ? TOB_STYLE_IDS.currency : isLabel ? TOB_STYLE_IDS.metaLabel : TOB_STYLE_IDS.metaValue;
       if (numberFormat === "currency") return TOB_STYLE_IDS.currency;
       if (numberFormat === "integer") return TOB_STYLE_IDS.integer;
@@ -775,7 +780,7 @@
       const columnIndex = columnIndexFromName(refMatch[1]);
       const value = sheet.rows?.[rowIndex]?.[columnIndex];
       const merge = (sheet.merges || []).map(ref => String(ref).match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/)).find(match => {
-        if (!match || Number(match[2]) !== rowIndex + 1 || Number(match[4]) !== rowIndex + 1) return false;
+        if (!match || rowIndex + 1 < Number(match[2]) || rowIndex + 1 > Number(match[4])) return false;
         const start = columnIndexFromName(match[1]);
         const end = columnIndexFromName(match[3]);
         return columnIndex >= start && columnIndex <= end;
@@ -825,7 +830,7 @@
     const workbook = XLSX.utils.book_new();
     workbook.Props = { Title: "PP & Prosper SME Quotation Core Reliability v4", Subject: "Offline quotation", Author: "PP & Prosper" };
     displayModel.sheets.forEach(sheet => {
-      const worksheet = XLSX.utils.aoa_to_sheet(sheet.rows);
+      const worksheet = XLSX.utils.aoa_to_sheet(sheet.rows, { sheetStubs: true });
       applyWorkbookLayout(worksheet, sheet);
       XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name.slice(0, 31));
     });

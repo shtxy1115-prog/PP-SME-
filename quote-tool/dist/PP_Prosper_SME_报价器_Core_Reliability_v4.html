@@ -599,6 +599,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     DIAGNOSTIC_LAB: "检查费和化验费：医学必需且合理的化验费及检查费，包括但不限于血液检查、尿检、X光检查、超声波检查等。\nDiagnostic and Laboratory Tests: Medically necessary and reasonable expenses for laboratory tests and examinations, including but not limited to blood tests, urine tests, X-ray examinations, and ultrasound examinations.",
     ADVANCED_IMAGING: "大型检查费：医学必需且合理的、由医生开具的大型检查费用，包括但不限于：1.计算机断层扫描费；2.正电子发射计算机断层扫描费；3.核磁共振检查费；4.内窥镜检查费（如, 胃镜检查, 结肠镜检查, 膀胱镜检查, 阴道镜检查）；5.磁共振血管成像费；6.计算机辅助断层成像费；7.消化道造影费\nAdvanced Imagining: Medically necessary and reasonable expenses for advanced imaging tests prescribed by a doctor, including but not limited to: 1. CT: Computed tomography scan; 2. PET: Positron emission tomography; 3. MRI: Magnetic resonance imaging; 4. Endoscopy (e.g., gastroscopy, colonoscopy, cystoscopy, colposcopy); 5. MRA: Magnetic Resonance Angiogram; 6. CTA: CT angiography scan; 7.GI scan: gastrointestinal radiology",
     OUTPATIENT_SURGERY: "门诊手术费：手术医师费和麻醉师费、手术室和恢复室费\nOut-patient Surgery: Operating theatre and recovery room、surgeon and Anesthetists Fee",
+    ONLINE_CONSULTATIONS: "在线问诊\nOnline Consultations\n（不含精神和心理障碍治疗）\n(Mental and psychological disorders treatment is not covered)",
     THERAPY: "理疗费\nTherapeutic Services\n\n医学必需且合理的物理治疗、美式脊椎矫正、职业疗法、语言治疗，电疗等费用（含挂号费、诊疗费及治疗费）\nThis benefit refers to medically necessary and reasonable expenses for physiotherapy, physiotherapist evaluation fee, chiropractic therapy, vocational therapy, speech therapy, occupational therapy, and electrotherapy (Including registration fee, diagnosis and treatment fee, and therapy fee)",
     TCM_HOMEOPATHY: "传统中医治疗和顺势疗法费\nTraditional Chinese Medicine Treatment and Homeopathy\n\n针对可赔付的疾病，由具有相应医疗资质的专业医师在医疗机构实施的医学必需且合理的传统中医治疗和顺势疗法费用，包括但不限于中医针灸、推拿、拔罐、中药外敷、小针刀治疗，以及顺势疗法\nTraditional Chinese Medicine Treatment and Homeopathy: Medically necessary and reasonable expenses for Traditional Chinese Medicine treatment and homeopathy provided by professionally qualified practitioners at a medical institution for covered illnesses, including but not limited to acupuncture, Tuina, Cupping, Chinese medicine for external, Needle-knife therapy, Homeopathy",
     PRESCRIBED_HERBS: "中草药费\nPrescribed Traditional Chinese Medicine\n\n注册中医医师处方的医学必需且合理的中草药费用\nMedically necessary and reasonable expenses for Chinese herbal medicine prescribed by a registered Traditional Chinese Medicine practitioner.",
@@ -622,7 +623,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   const TOB_DISPLAY_INSERTS = Object.freeze({
     HOSPICE_OUTPATIENT: Object.freeze([
-      Object.freeze({ kind: "benefit", text: "临终关怀费\nHospice Care\n\n指被保险人因患有疾病到终末期阶段（包括但不限于恶性肿瘤IV期、肾功能衰竭），医疗机构已停止对其原发疾病的治疗，仅以暂时缓解症状或维持生命为目的所产生的医疗费用，包括经医疗服务供应商批准在具有相应资质的临终关怀机构或医疗机构因临终关怀（包括但不限于姑息治疗）而实际产生的医疗费用。本福利下设门诊费用、住院费用两个子项，各子项限额分别见下表相应条款。\nMedically necessary and reasonable expenses for hospice care. This refers to medical expenses incurred when the Insured Person has a terminal-stage illness (including but not limited to Stage IV malignant tumor, renal failure)，the medical institution has ceased treating the original disease, and the medical expenses incurred solely for the purpose of temporarily alleviating symptoms or maintaining life include the actual medical expenses approved by the medical service provider and incurred at qualified hospice care institutions or medical institutions for end-of-life care (including but not limited to palliative care). This benefit includes two sub-items: outpatient expenses and hospitalization expenses. The limits for each sub-item are specified in the corresponding clauses in the table below." }),
+      Object.freeze({ kind: "benefit", labelStyle: "section", text: "临终关怀费\nHospice Care\n\n指被保险人因患有疾病到终末期阶段（包括但不限于恶性肿瘤IV期、肾功能衰竭），医疗机构已停止对其原发疾病的治疗，仅以暂时缓解症状或维持生命为目的所产生的医疗费用，包括经医疗服务供应商批准在具有相应资质的临终关怀机构或医疗机构因临终关怀（包括但不限于姑息治疗）而实际产生的医疗费用。本福利下设门诊费用、住院费用两个子项，各子项限额分别见下表相应条款。\nMedically necessary and reasonable expenses for hospice care. This refers to medical expenses incurred when the Insured Person has a terminal-stage illness (including but not limited to Stage IV malignant tumor, renal failure)，the medical institution has ceased treating the original disease, and the medical expenses incurred solely for the purpose of temporarily alleviating symptoms or maintaining life include the actual medical expenses approved by the medical service provider and incurred at qualified hospice care institutions or medical institutions for end-of-life care (including but not limited to palliative care). This benefit includes two sub-items: outpatient expenses and hospitalization expenses. The limits for each sub-item are specified in the corresponding clauses in the table below." }),
     ]),
     BREAST_CERVICAL_SCREENING: Object.freeze([
       Object.freeze({ kind: "section", text: "特殊检查费\nSpecial Examination Fee" }),
@@ -1057,6 +1058,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     });
   }
 
+  function tobDisplayRows() {
+    const rows = [];
+    forEachTobDisplayRow(row => rows.push(row));
+    return rows;
+  }
+
   function selectedOptionLabel(variant, type) {
     return getOptional(type, variant?.[type] || "none")?.label || "未选择 / Not selected";
   }
@@ -1127,6 +1134,21 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     let coverage = selected || !["maternity", "wellness", "dental", "vision"].includes(item.section)
       ? item.planValues[plan?.code] ?? ""
       : "不涵盖\nNot Covered";
+    if (item.benefitId === "ONLINE_CONSULTATIONS") {
+      coverage = "中国大陆公立医院开设的互联网医院：\nPublic Internet hospitals in Mainland China\n赔付至门诊医疗上限，且受限于门诊处方药上限\nCovered up to outpatient maximum and outpatient prescription drug benefit maximum\n\n授权通过的私立医院/诊所：\nApproved private providers:\n赔付至门诊医疗上限，且受限于门诊处方药上限\nCovered up to outpatient maximum and outpatient prescription drug benefit maximum";
+    }
+    if (item.benefitId === "CHRONIC_MEDICINE_DELIVERY") {
+      coverage = "赔付至门诊医疗上限\nCovered up to outpatient maximum";
+    }
+    if (item.benefitId === "OUTPATIENT_CANCER_DIALYSIS") {
+      coverage = "赔付至年度最高保额，且不受限于门诊各项福利限制及门诊医疗上限\nCovered up to annual maximum, and not subject to outpatient benefits sub limitations and maximum";
+    }
+    if (item.benefitId === "HOME_NURSING" && ["P3", "P4"].includes(plan?.group)) {
+      coverage = "100天\n100 days";
+    }
+    if (item.benefitId === "INFLUENZA_VACCINE") {
+      coverage = selected ? "不涵盖\nNot Covered" : "300元\nCNY 300";
+    }
     if (item.benefitId === "POLICY_COPAY") coverage = selectedCopay(variant).coverage;
     if (item.benefitId === "NON_CATASTROPHIC_PEC" && variant.preExisting === "fmu") coverage = selectedPreExisting(variant).description;
     return coverage;
@@ -1150,7 +1172,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     rowStyles.push("header");
     merges.push(`A${headerRow}:B${headerRow}`, `C${headerRow}:D${headerRow}`);
 
-    forEachTobDisplayRow(displayRow => {
+    const displayRows = tobDisplayRows();
+    displayRows.forEach((displayRow, displayIndex) => {
       if (displayRow.kind === "section") {
         const sectionRow = rows.length + 1;
         rows.push([displayRow.text, "", "", "", ""]);
@@ -1159,9 +1182,22 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return;
       }
       const benefitRow = rows.length + 1;
-      rows.push([displayRow.text, "", displayRow.item ? tobCoverage(displayRow.item, variant) : "", "", ""]);
-      rowStyles.push("body");
-      merges.push(`A${benefitRow}:B${benefitRow}`, `C${benefitRow}:D${benefitRow}`);
+      const sharedGroup = displayRow.item?.sharedGroup === "THERAPY_TCM_HERBAL";
+      const previousShared = displayRows[displayIndex - 1]?.item?.sharedGroup === "THERAPY_TCM_HERBAL";
+      const coverage = displayRow.item && (!sharedGroup || !previousShared) ? tobCoverage(displayRow.item, variant) : "";
+      rows.push([displayRow.text, "", coverage, "", ""]);
+      rowStyles.push(displayRow.labelStyle === "section" ? "benefitHeading" : "body");
+      merges.push(`A${benefitRow}:B${benefitRow}`);
+      if (sharedGroup) {
+        if (!previousShared) {
+          const endIndex = displayRows.findIndex((row, index) => index > displayIndex && row.item?.sharedGroup !== "THERAPY_TCM_HERBAL");
+          const lastSharedIndex = endIndex < 0 ? displayRows.length - 1 : endIndex - 1;
+          const lastRow = benefitRow + (lastSharedIndex - displayIndex);
+          merges.push(`C${benefitRow}:D${lastRow}`);
+        }
+      } else {
+        merges.push(`C${benefitRow}:D${benefitRow}`);
+      }
     });
   }
 
@@ -1208,7 +1244,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       merges.push(`${first}${headerRow}:${second}${headerRow}`);
     });
 
-    forEachTobDisplayRow(displayRow => {
+    const displayRows = tobDisplayRows();
+    displayRows.forEach((displayRow, displayIndex) => {
       if (displayRow.kind === "section") {
         const sectionRow = rows.length + 1;
         rows.push([displayRow.text, ...blanks(columnCount - 1)]);
@@ -1220,13 +1257,28 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       rows.push([
         displayRow.text,
         "",
-        ...variants.flatMap(variant => [displayRow.item ? tobCoverage(displayRow.item, variant) : "", ""]),
+        ...variants.flatMap(variant => {
+          const sharedGroup = displayRow.item?.sharedGroup === "THERAPY_TCM_HERBAL";
+          const previousShared = displayRows[displayIndex - 1]?.item?.sharedGroup === "THERAPY_TCM_HERBAL";
+          return [displayRow.item && (!sharedGroup || !previousShared) ? tobCoverage(displayRow.item, variant) : "", ""];
+        }),
       ]);
-      rowStyles.push("body");
+      rowStyles.push(displayRow.labelStyle === "section" ? "benefitHeading" : "body");
       merges.push(`A${benefitRow}:B${benefitRow}`);
       variants.forEach((_, index) => {
         const [first, second] = planPair(index);
-        merges.push(`${first}${benefitRow}:${second}${benefitRow}`);
+        const sharedGroup = displayRow.item?.sharedGroup === "THERAPY_TCM_HERBAL";
+        const previousShared = displayRows[displayIndex - 1]?.item?.sharedGroup === "THERAPY_TCM_HERBAL";
+        if (sharedGroup) {
+          if (!previousShared) {
+            const endIndex = displayRows.findIndex((row, index) => index > displayIndex && row.item?.sharedGroup !== "THERAPY_TCM_HERBAL");
+            const lastSharedIndex = endIndex < 0 ? displayRows.length - 1 : endIndex - 1;
+            const lastRow = benefitRow + (lastSharedIndex - displayIndex);
+            merges.push(`${first}${benefitRow}:${second}${lastRow}`);
+          }
+        } else {
+          merges.push(`${first}${benefitRow}:${second}${benefitRow}`);
+        }
       });
     });
 
@@ -1252,12 +1304,6 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return { name: "保险责任TOB", rows, rowStyles, widths: [34.796875, 48.19921875, 22.796875, 24.796875, 11], merges };
   }
 
-  function summaryValue(variants, getter, formatter = value => value) {
-    if (!variants.length) return "—";
-    if (variants.length === 1) return formatter(getter(variants[0], 0));
-    return variants.map((variant, index) => `方案 ${index + 1} · ${proposalPlanCode(variant.planCode)}：${formatter(getter(variant, index))}`).join("\n");
-  }
-
   function variantTotalsByOptionalType(state, variant) {
     const members = membersForVariant(state, variant);
     const result = { maternity: 0, wellness: 0, dental: 0, vision: 0 };
@@ -1273,126 +1319,139 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return result;
   }
 
-  function quotationPersonValue(person, variants, state, type) {
-    const applicable = variants.filter(variant => membersForVariant(state, variant).includes(person));
-    if (!applicable.length) return "—";
-    const values = applicable.map(variant => {
-      const plan = getPlan(variant.planCode);
-      const breakdown = premiumBreakdown(person, variant, state);
-      let value;
-      if (type === "medical") {
-        value = breakdown.status === QUOTE_STATUSES.AUTO_QUOTABLE || breakdown.status === QUOTE_STATUSES.MANUAL_RATE
-          ? adjustedMedicalRateFor(breakdown.baseMedical, variant, state)
-          : displayStatus(breakdown.status);
-      } else {
-        value = (breakdown.status === QUOTE_STATUSES.AUTO_QUOTABLE || breakdown.status === QUOTE_STATUSES.MANUAL_RATE)
-          ? optionalPremiumCell(variant, plan, type)
-          : displayStatus(breakdown.status);
-        }
-      return applicable.length === 1 ? value : `${proposalPlanCode(plan)}：${typeof value === "number" ? money(value) : value}`;
-    });
-    return values.length === 1 ? values[0] : values.join("\n");
-  }
-
   function buildQuotationSheet(state, variants) {
     const people = Array.isArray(state.people) ? state.people : [];
     const totalsFor = variant => totalsForVariant(state, variant);
     const totalsOptional = variant => variantTotalsByOptionalType(state, variant);
-    const plans = variants.map(variant => getPlan(variant.planCode)).filter(Boolean);
-    const selectedOptions = [...new Set(variants.flatMap(variant => selectedPlanChangeLines(variant, state)))].join("\n") || "标准承保 / Standard\n标准自付比例 0% / Standard co-payment 0%";
-    const planSummary = variants.map((variant, index) => variants.length === 1 ? proposalPlanLabel(variant.planCode) : `方案 ${index + 1}\n${proposalPlanLabel(variant.planCode)}`).join("\n") || "—";
-    const areaSummary = [...new Set(plans.map(plan => plan.area))].join("\n") || "—";
-    const totalNumber = (variant, field) => {
-      const totals = totalsFor(variant);
-      if (field === "medical") return totals.baseMedical - totals.discount;
-      if (field === "discount") return totals.discount;
-      if (field === "total") return totals.total;
-      return totalsOptional(variant)[field];
+    const optionalTypes = Object.keys(OPTIONAL_SECTION_TYPES).filter(type =>
+      variants.some(variant => (variant?.[type] || "none") !== "none"),
+    );
+    const detailColumns = variants.flatMap((variant, variantIndex) => [
+      { variant, variantIndex, type: "medical" },
+      ...optionalTypes.filter(type => (variant?.[type] || "none") !== "none")
+        .map(type => ({ variant, variantIndex, type })),
+    ]);
+    const columnCount = Math.max(8, variants.length + 1, 3 + detailColumns.length);
+    const lastColumn = columnName(columnCount - 1);
+    const blanks = count => Array.from({ length: count }, () => "");
+    const pad = values => [...values, ...blanks(Math.max(0, columnCount - values.length))];
+    const planHeaders = variants.map((variant, index) => `方案 ${index + 1}\n${proposalPlanLabel(variant.planCode)}`);
+    const displayPlanHeaders = planHeaders.length ? planHeaders : ["—"];
+    const areaHeaders = variants.map(variant => getPlan(variant.planCode)?.area || "—");
+    const optionHeaders = variants.map(variant => selectedPlanChangeLines(variant, state).join("\n"));
+    const optionalLabels = {
+      maternity: "可选生育福利保费\nOptional Maternity Benefits Premium",
+      wellness: "可选体检福利保费\nOptional Wellness Benefits Premium",
+      dental: "可选牙科福利保费\nOptional Dental Benefits Premium",
+      vision: "可选眼科福利保费\nOptional Vision Benefits Premium",
     };
-    const amount = field => {
-      if (!variants.length) return "—";
-      if (variants.length === 1) return totalNumber(variants[0], field);
-      return summaryValue(variants, variant => totalNumber(variant, field), value => money(value));
-    };
-    const rows = [
-      ["Prosper × PP SME 团体医疗保险报价表 Group Medical Insurance Quotation", "", "", "", "", "", "", ""],
-      ["团体中文名称 \nCompany Name (Chinese)", state.companyCn || "", "团体英文名称 \nCompany Name (English)", state.companyEn || "", "", "", "", ""],
-      ["保障期限 \nPolicy Period", `${state.startDate || ""}  至 / to ${state.endDate || ""}`, "参保人数 \nInsured Members", `${people.length} 人 / members`, "", "", "", ""],
-      ["方案  \nQuotation Plan", planSummary, "区域 \nArea", areaSummary, "", "", "", ""],
-      ["方案调整选择\nPlan Change Options", selectedOptions, "", "", "", "", "", ""],
-      ["医疗保费 \nMedical Premium", amount("medical"), "可选生育福利保费 \nOptional Maternity Benefits Premium", amount("maternity"), "", "", "", ""],
-      ["可选体检福利保费 \nOptional Wellness Benefits Premium", amount("wellness"), "可选牙科福利保费 \nOptional Dental Benefits Premium", amount("dental"), "", "", "", ""],
-      ["可选眼科福利保费 \nOptional Vision Benefits Premium", amount("vision"), "医疗保费优惠 \nMedical Discount", amount("discount"), "", "", "", ""],
-      ["最终保费 Total Premium", amount("total"), "", "", "", "", "", ""],
-      ["人员保费明细 Member Premium Details", "", "", "", "", "", "", ""],
-      ["人员 / Member", "人员类型 / Type", "年龄 / Age", "医疗保费/\n Medical  Premium", "生育福利保费 / \nMaternity Benefits Premium", "体检福利保费 /\n Wellness Benefits Premium", "牙科福利保费 / \n Dental Benefits Premium", "眼科福利保费 /\n  Vision Benefits Premium"],
-    ];
-    const rowStyles = ["title", "meta", "meta", "meta", "section", "meta", "meta", "discount", "total", "section", "header"];
-    const merges = ["A1:D1", "B5:D5", "A10:D10"];
     const typeLabel = { employee: "员工\nEmployee", spouse: "配偶\nSpouse", child: "子女\nChild" };
+    const rows = [];
+    const rowStyles = [];
+    const merges = [`A1:${lastColumn}1`];
+    const pushRow = (row, style) => { rows.push(pad(row)); rowStyles.push(style); };
+
+    pushRow(["Prosper × PP SME 团体医疗保险报价表 Group Medical Insurance Quotation"], "title");
+    pushRow(["团体中文名称 \nCompany Name (Chinese)", state.companyCn || "", "团体英文名称 \nCompany Name (English)", state.companyEn || ""], "meta");
+    pushRow(["保障期限 \nPolicy Period", `${state.startDate || ""}  至 / to ${state.endDate || ""}`, "参保人数 \nInsured Members", `${people.length} 人 / members`], "meta");
+    if (columnCount > 4) merges.push(`D2:${lastColumn}2`);
+    pushRow(["方案 / Quotation Plan", ...displayPlanHeaders], "meta");
+    pushRow(["区域 / Area", ...(areaHeaders.length ? areaHeaders : ["—"])], "meta");
+    pushRow(["方案调整选择\nPlan Change Options", ...(optionHeaders.length ? optionHeaders : ["—"])], "meta");
+
+    const summaryTitleRow = rows.length + 1;
+    pushRow(["报价保费汇总 / Premium Summary"], "section");
+    merges.push(`A${summaryTitleRow}:${lastColumn}${summaryTitleRow}`);
+    pushRow(["保费项目 / Premium Item", ...displayPlanHeaders], "header");
+    const pushPremiumRow = (label, getter, style = "meta") => {
+      const values = variants.length ? variants.map(getter) : ["—"];
+      pushRow([label, ...values], style);
+    };
+    pushPremiumRow("医疗保费 / Medical Premium", variant => {
+      const totals = totalsFor(variant);
+      return totals.baseMedical - totals.discount;
+    });
+    optionalTypes.forEach(type => pushPremiumRow(optionalLabels[type], variant => {
+      if ((variant?.[type] || "none") === "none") return "";
+      const detail = optionalPremiumDetail(variant, variant.planCode, type);
+      return detail.pending ? "单独核保 / 待人工费率" : totalsOptional(variant)[type];
+    }));
+    const hasMedicalDiscount = variants.some(variant => medicalDiscountRate(variant, state) > 0);
+    if (hasMedicalDiscount) {
+      pushPremiumRow("医疗保费优惠 / Medical Discount", variant => totalsFor(variant).discount, "discount");
+    }
+    pushPremiumRow("最终保费 Total Premium", variant => totalsFor(variant).total, "total");
+
+    const detailTitleRow = rows.length + 1;
+    pushRow(["人员保费明细 Member Premium Details"], "section");
+    merges.push(`A${detailTitleRow}:${lastColumn}${detailTitleRow}`);
+    const detailHeaders = detailColumns.map(({ variant, variantIndex, type }) => {
+      const plan = getPlan(variant.planCode);
+      const planLabel = `方案 ${variantIndex + 1} · ${proposalPlanCode(plan)}`;
+      return type === "medical"
+        ? `${planLabel}\n医疗保费 / Medical Premium`
+        : `${planLabel}\n${optionalLabels[type]}`;
+    });
+    pushRow(["人员 / Member", "人员类型 / Type", "年龄 / Age", ...detailHeaders], "header");
     people.forEach((person, personIndex) => {
-      const applicable = variants.filter(variant => membersForVariant(state, variant).includes(person));
-      const planCodes = applicable.map(variant => proposalPlanCode(variant.planCode)).join(" / ");
-      rows.push([
-        `${personIndex + 1} · ${person.name || person.id || ""}${planCodes ? `\n${planCodes}` : ""}`,
+      const values = detailColumns.map(({ variant, type }) => {
+        if (!membersForVariant(state, variant).includes(person)) return "";
+        const plan = getPlan(variant.planCode);
+        const breakdown = premiumBreakdown(person, variant, state);
+        const priced = breakdown.status === QUOTE_STATUSES.AUTO_QUOTABLE || breakdown.status === QUOTE_STATUSES.MANUAL_RATE;
+        if (!priced) return displayStatus(breakdown.status);
+        if (type === "medical") return adjustedMedicalRateFor(breakdown.baseMedical, variant, state);
+        return optionalPremiumCell(variant, plan, type);
+      });
+      pushRow([
+        `${personIndex + 1} · ${person.name || person.id || ""}`,
         typeLabel[person.type] || person.type || "",
         personAge(person) ?? "",
-        quotationPersonValue(person, variants, state, "medical"),
-        quotationPersonValue(person, variants, state, "maternity"),
-        quotationPersonValue(person, variants, state, "wellness"),
-        quotationPersonValue(person, variants, state, "dental"),
-        quotationPersonValue(person, variants, state, "vision"),
-      ]);
-      rowStyles.push("body");
+        ...values,
+      ], "body");
     });
-    return { name: "报价 Quotation", rows, rowStyles, widths: [36, 44.796875, 41.796875, 30.796875, 33, 29.59765625, 26, 29], merges };
+
+    const defaultWidths = [36, 44.796875, 41.796875, 30.796875, 33, 29.59765625, 26, 29];
+    const widths = Array.from({ length: columnCount }, (_, index) => defaultWidths[index] || 30.796875);
+    return { name: "报价 Quotation", rows, rowStyles, widths, merges };
   }
 
-  const PREMIUM_DISPLAY_PROFILES = Object.freeze({
-    P1: Object.freeze(["m30", "w3000", "d5000"]),
-    P2: Object.freeze(["m30", "w3000", "d5000"]),
-    P3: Object.freeze(["m60", "w5000", "d10000no"]),
-    P4: Object.freeze(["m60", "w5000", "d10000no"]),
-  });
-
   const PREMIUM_DISPLAY_LABELS = Object.freeze({
-    maternity: "生育福利/ Maternity Benefits ",
+    maternity: "生育福利 / Maternity Benefits",
     wellness: "体检福利 / Wellness Benefits",
-    dental: "齿科福利 / Dental Benefits",
+    dental: "牙科福利 / Dental Benefits",
     vision: "眼科福利 / Vision Benefits",
   });
 
   const PREMIUM_DISPLAY_SUM_ASSURED = Object.freeze({
     m30: "30,000元 / CNY30,000",
     m60: "60,000元 / CNY60,000",
+    w1500: "1,500元 / CNY1,500",
     w3000: "3,000元 / CNY3,000",
     w5000: "5,000元 / CNY5,000",
+    d2000: "2,000元 / CNY2,000",
     d5000: "5,000元 / CNY5,000",
+    d10000: "10,000元 / CNY10,000",
     d10000no: "10,000元/CNY10,000",
+    v1000: "1,000元 / CNY1,000",
   });
 
   function premiumDisplayCatalog(variants = []) {
     const catalog = [];
-    const seen = new Set();
-    Object.keys(OPTIONAL_SECTION_TYPES).forEach(type => {
-      variants.forEach(variant => {
-        const plan = getPlan(variant?.planCode);
-        const profile = (PREMIUM_DISPLAY_PROFILES[plan?.group] || []).filter(code => getOptional(type, code));
-        profile.forEach(code => {
-        const option = type ? getOptional(type, code) : null;
-        const premium = option && plan && Object.prototype.hasOwnProperty.call(option.premiumByPlan, plan.code)
-          ? option.premiumByPlan[plan.code]
-          : null;
-        if (!type || !option || premium === null || premium === undefined) return;
-        const key = `${type}:${code}:${premium}`;
-        if (seen.has(key)) return;
-        seen.add(key);
+    variants.forEach((variant, index) => {
+      const plan = getPlan(variant?.planCode);
+      if (!plan) return;
+      Object.keys(OPTIONAL_SECTION_TYPES).forEach(type => {
+        const code = variant?.[type] || "none";
+        if (code === "none") return;
+        const option = getOptional(type, code);
+        if (!option) return;
+        const detail = optionalPremiumDetail(variant, plan, type);
         catalog.push([
-          PREMIUM_DISPLAY_LABELS[type],
+          `${PREMIUM_DISPLAY_LABELS[type]}\n方案 ${index + 1} · ${proposalPlanCode(plan)}`,
           PREMIUM_DISPLAY_SUM_ASSURED[code] || option.label,
-          premium,
+          detail.pending ? "单独核保 / 待人工费率" : detail.value,
         ]);
-        });
       });
     });
     return catalog;
@@ -1425,26 +1484,31 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     });
     rows.push(["70-75*", ...variants.map(() => "单独核保 / 待人工费率"), ...blanks(tableColumnCount - medicalColumnCount)]);
     rowStyles.push("section");
-    for (let index = 0; index < 3; index += 1) {
-      rows.push(blanks(tableColumnCount));
-      rowStyles.push("body");
-    }
-    const optionalTitleRow = rows.length + 1;
-    rows.push(["可选方案费率", ...blanks(tableColumnCount - 1)]);
-    rowStyles.push("title");
-    rows.push(["保险责任 / Benefits", "额度 / Sum of Assured", "保费 / Premium", ...blanks(tableColumnCount - 3)]);
-    rowStyles.push("header");
-    premiumDisplayCatalog(variants).forEach(catalogRow => {
-      rows.push([...catalogRow, ...blanks(tableColumnCount - 3)]);
-      rowStyles.push("body");
-    });
     const lastColumn = columnName(tableColumnCount - 1);
+    const merges = [`A1:${lastColumn}1`];
+    const optionalRows = premiumDisplayCatalog(variants);
+    if (optionalRows.length) {
+      for (let index = 0; index < 3; index += 1) {
+        rows.push(blanks(tableColumnCount));
+        rowStyles.push("body");
+      }
+      const optionalTitleRow = rows.length + 1;
+      rows.push(["可选方案费率", ...blanks(tableColumnCount - 1)]);
+      rowStyles.push("title");
+      merges.push(`A${optionalTitleRow}:${lastColumn}${optionalTitleRow}`);
+      rows.push(["保险责任 / Benefits", "额度 / Sum of Assured", "保费 / Premium", ...blanks(tableColumnCount - 3)]);
+      rowStyles.push("header");
+      optionalRows.forEach(catalogRow => {
+        rows.push([...catalogRow, ...blanks(tableColumnCount - 3)]);
+        rowStyles.push("body");
+      });
+    }
     return {
       name: "费率 Premium",
       rows,
       rowStyles,
       widths: [34, ...blanks(tableColumnCount - 1).map(() => 50.796875)],
-      merges: [`A1:${lastColumn}1`, `A${optionalTitleRow}:C${optionalTitleRow}`],
+      merges,
     };
   }
 
@@ -2157,7 +2221,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const widths = sheet.widths || [];
     const merge = (sheet.merges || []).find(ref => {
       const match = String(ref).match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
-      if (!match || Number(match[2]) !== rowIndex + 1 || Number(match[4]) !== rowIndex + 1) return false;
+      if (!match || rowIndex + 1 < Number(match[2]) || rowIndex + 1 > Number(match[4])) return false;
       const start = columnIndexFromName(match[1]);
       const end = columnIndexFromName(match[3]);
       return columnIndex >= start && columnIndex <= end;
@@ -2172,6 +2236,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   // Excel for Mac renders merged cells narrower than their summed XML column widths.
   // Keep an explicit safety margin so long English lines do not clip at the right edge.
   const TOB_TEXT_WRAP_FACTOR = 0.42;
+  const MAX_EXCEL_ROW_HEIGHT_PT = 409.5;
 
   function displayCharacterWidth(character) {
     return /[^\u0000-\u00ff]/.test(character) ? 1 : 0.55;
@@ -2237,7 +2302,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const safetyLines = isTob && lines >= 3 ? 1 : 0;
     const lineHeight = isTob ? 18 : 15;
     const padding = isTob ? 10 : 8;
-    return Math.min(300, Math.max(isTob ? 28 : 22, lineHeight * (lines + safetyLines) + padding));
+    return Math.min(MAX_EXCEL_ROW_HEIGHT_PT, Math.max(isTob ? 28 : 22, lineHeight * (lines + safetyLines) + padding));
   }
 
   const WORKBOOK_COLORS = Object.freeze({
@@ -2275,8 +2340,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const label = (sheet.rows?.[rowIndex] || []).filter(cell => typeof cell === "string").join(" ");
     if (sheet.name === "费率 Premium" && rowIndex >= 6) return true;
     if (sheet.name === "报价 Quotation") {
-      if (rowIndex >= 5 && rowIndex <= 8 && (columnIndex === 1 || columnIndex === 3)) return true;
-      if (rowIndex >= 11 && columnIndex >= 3) return true;
+      const detailHeaderIndex = (sheet.rows || []).findIndex(row => String(row[0] || "").includes("人员 / Member"));
+      if (detailHeaderIndex >= 0 && rowIndex > detailHeaderIndex && columnIndex >= 3) return true;
+      const summaryHeaderIndex = (sheet.rows || []).findIndex(row => row[0] === "保费项目 / Premium Item");
+      const detailTitleIndex = (sheet.rows || []).findIndex(row => String(row[0] || "").includes("人员保费明细"));
+      if (summaryHeaderIndex >= 0 && rowIndex > summaryHeaderIndex && rowIndex < detailTitleIndex && columnIndex >= 1) return true;
     }
     if (/保费|Premium|费率|Rate|优惠|Discount|总额|Total/.test(label)) return true;
     return /保费|Premium|费率|Rate|优惠|Discount|总额|Total/.test(label);
@@ -2310,7 +2378,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       if (kind === "title") return { hpt: sheet.name.includes("TOB") ? Math.min(72, Math.max(56, computed)) : 38 };
       if (kind === "header") return { hpt: Math.min(82, Math.max(42, computed)) };
       if (kind === "section") return { hpt: Math.min(120, Math.max(28, computed)) };
-      return { hpt: Math.min(isTob ? 300 : 170, Math.max(kind === "meta" ? 26 : 28, computed)) };
+      return { hpt: Math.min(isTob ? MAX_EXCEL_ROW_HEIGHT_PT : 170, Math.max(kind === "meta" ? 26 : 28, computed)) };
     });
     applyWorksheetPrintLayout(worksheet, sheet);
   }
@@ -2336,6 +2404,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       if (kind === "title") return TOB_STYLE_IDS.title;
       if (kind === "header") return TOB_STYLE_IDS.header;
       if (kind === "section") return TOB_STYLE_IDS.section;
+      if (kind === "benefitHeading" && isLabel) return TOB_STYLE_IDS.section;
       if (kind === "meta") return numberFormat === "currency" ? TOB_STYLE_IDS.currency : isLabel ? TOB_STYLE_IDS.metaLabel : TOB_STYLE_IDS.metaValue;
       if (numberFormat === "currency") return TOB_STYLE_IDS.currency;
       if (numberFormat === "integer") return TOB_STYLE_IDS.integer;
@@ -2456,7 +2525,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const columnIndex = columnIndexFromName(refMatch[1]);
       const value = sheet.rows?.[rowIndex]?.[columnIndex];
       const merge = (sheet.merges || []).map(ref => String(ref).match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/)).find(match => {
-        if (!match || Number(match[2]) !== rowIndex + 1 || Number(match[4]) !== rowIndex + 1) return false;
+        if (!match || rowIndex + 1 < Number(match[2]) || rowIndex + 1 > Number(match[4])) return false;
         const start = columnIndexFromName(match[1]);
         const end = columnIndexFromName(match[3]);
         return columnIndex >= start && columnIndex <= end;
@@ -2506,7 +2575,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const workbook = XLSX.utils.book_new();
     workbook.Props = { Title: "PP & Prosper SME Quotation Core Reliability v4", Subject: "Offline quotation", Author: "PP & Prosper" };
     displayModel.sheets.forEach(sheet => {
-      const worksheet = XLSX.utils.aoa_to_sheet(sheet.rows);
+      const worksheet = XLSX.utils.aoa_to_sheet(sheet.rows, { sheetStubs: true });
       applyWorkbookLayout(worksheet, sheet);
       XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name.slice(0, 31));
     });
