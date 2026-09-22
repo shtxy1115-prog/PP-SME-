@@ -68,9 +68,9 @@ const fixedCases = [
       assert.equal(quotation.rows[1][0], "团体中文名称 \nCompany Name (Chinese)");
       assert.equal(quotation.rows[1].length, 8);
       assert.ok(quotation.merges.includes("A1:D1"));
-      assert.ok(quotation.merges.includes("A7:C7"));
-      assert.ok(quotation.merges.includes("A15:D15"));
-      assert.equal(quotation.merges.some(ref => /:H\d+$/.test(ref)), false);
+      assert.ok(quotation.merges.includes("B5:D5"));
+      assert.ok(quotation.merges.includes("A6:C6"));
+      assert.ok(quotation.merges.includes("A14:H14"));
       const medicalSummary = quotation.rows.find(row => row[0] === "医疗保费 / Medical Premium");
       assert.equal(typeof medicalSummary[1], "number");
       assert.equal(typeof medicalSummary[2], "number");
@@ -130,8 +130,8 @@ const fixedCases = [
       assert.match(quotationXml, /<c\b[^>]*r="D2"[^>]*\bs="5"/);
       assert.doesNotMatch(quotationXml, /<mergeCell ref="D2:H2"/);
       const quotationStyleId = cell => quotationXml.match(new RegExp(`<c\\b[^>]*r="${cell}"[^>]*\\bs="(\\d+)"`))?.[1];
-      for (const cell of ["A10", "A11", "A12"]) assert.equal(quotationStyleId(cell), quotationStyleId("A9"), `${cell} must match the Medical Premium label formatting`);
-      for (const cell of ["B10", "B11", "B12"]) assert.equal(quotationStyleId(cell), quotationStyleId("B9"), `${cell} must match the Medical Premium amount formatting`);
+      for (const cell of ["A9", "A10", "A11"]) assert.equal(quotationStyleId(cell), quotationStyleId("A8"), `${cell} must match the Medical Premium label formatting`);
+      for (const cell of ["B9", "B10", "B11"]) assert.equal(quotationStyleId(cell), quotationStyleId("B8"), `${cell} must match the Medical Premium amount formatting`);
       const tobXml = await outputZip.file("xl/worksheets/sheet3.xml").async("string");
       assert.match(tobXml, /<mergeCell ref="C\d+:D\d+"/);
       const hospiceRowNumber = hospiceSourceRow + 1;
@@ -231,7 +231,7 @@ const fixedCases = [
       });
       const quotation = model.sheets.find(sheet => sheet.name === "报价 Quotation");
       assert.equal(quotation.widths.length, 5);
-      assert.deepEqual(quotation.merges, ["A1:D1", "A7:C7", "A11:D11"]);
+      assert.deepEqual(quotation.merges, ["A1:D1", "B5:D5", "A6:C6", "A10:E10"]);
 
       const workbook = XLSX.utils.book_new();
       const displayModel = { ...model, sheets: model.sheets.map(workbookHelpers.prepareDisplaySheet) };
@@ -245,9 +245,9 @@ const fixedCases = [
       writeFileSync(quotationLayoutOutputPath, Buffer.from(styledBytes));
       const readBack = XLSX.read(styledBytes, { type: "array", cellStyles: true, sheetStubs: true });
       const sheet = readBack.Sheets["报价 Quotation"];
-      assert.equal(sheet["!ref"], "A1:E19");
+      assert.equal(sheet["!ref"], "A1:E18");
       assert.equal(sheet["!cols"].length, 5);
-      assert.deepEqual(sheet["!merges"].map(XLSX.utils.encode_range), ["A1:D1", "A7:C7", "A11:D11"]);
+      assert.deepEqual(sheet["!merges"].map(XLSX.utils.encode_range), ["A1:D1", "B5:D5", "A6:C6", "A10:E10"]);
     },
   },
   {

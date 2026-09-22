@@ -921,13 +921,19 @@
         .map(type => ({ variant, variantIndex, type })),
     ]);
     const columnCount = Math.max(4, 3 + detailColumns.length);
+    const detailLastColumn = columnName(columnCount - 1);
     const summaryLastColumn = columnName(Math.max(1, variants.length));
     const blanks = count => Array.from({ length: count }, () => "");
     const pad = values => [...values, ...blanks(Math.max(0, columnCount - values.length))];
     const planHeaders = variants.map((variant, index) => `方案 ${index + 1}\n${proposalPlanLabel(variant.planCode)}`);
     const displayPlanHeaders = planHeaders.length ? planHeaders : ["—"];
-    const areaHeaders = variants.map(variant => getPlan(variant.planCode)?.area || "—");
-    const optionHeaders = variants.map(variant => selectedPlanChangeLines(variant, state).join("\n"));
+    const plans = variants.map(variant => getPlan(variant.planCode)).filter(Boolean);
+    const planSummary = variants.map((variant, index) => variants.length === 1
+      ? proposalPlanLabel(variant.planCode)
+      : `方案 ${index + 1}\n${proposalPlanLabel(variant.planCode)}`).join("\n") || "—";
+    const areaSummary = [...new Set(plans.map(plan => plan.area))].join("\n") || "—";
+    const selectedOptions = [...new Set(variants.flatMap(variant => selectedPlanChangeLines(variant, state)))].join("\n")
+      || "标准承保 / Standard\n标准自付比例 0% / Standard co-payment 0%";
     const optionalLabels = {
       maternity: "可选生育福利保费\nOptional Maternity Benefits Premium",
       wellness: "可选体检福利保费\nOptional Wellness Benefits Premium",
@@ -937,15 +943,14 @@
     const typeLabel = { employee: "员工\nEmployee", spouse: "配偶\nSpouse", child: "子女\nChild" };
     const rows = [];
     const rowStyles = [];
-    const merges = ["A1:D1"];
+    const merges = ["A1:D1", "B5:D5"];
     const pushRow = (row, style) => { rows.push(pad(row)); rowStyles.push(style); };
 
     pushRow(["Prosper × PP SME 团体医疗保险报价表 Group Medical Insurance Quotation"], "title");
     pushRow(["团体中文名称 \nCompany Name (Chinese)", state.companyCn || "", "团体英文名称 \nCompany Name (English)", state.companyEn || ""], "meta");
     pushRow(["保障期限 \nPolicy Period", `${state.startDate || ""}  至 / to ${state.endDate || ""}`, "参保人数 \nInsured Members", `${people.length} 人 / members`], "meta");
-    pushRow(["方案 / Quotation Plan", ...displayPlanHeaders], "meta");
-    pushRow(["区域 / Area", ...(areaHeaders.length ? areaHeaders : ["—"])], "meta");
-    pushRow(["方案调整选择\nPlan Change Options", ...(optionHeaders.length ? optionHeaders : ["—"])], "meta");
+    pushRow(["方案 / Quotation Plan", planSummary, "区域 / Area", areaSummary], "meta");
+    pushRow(["方案调整选择\nPlan Change Options", selectedOptions], "section");
 
     const summaryTitleRow = rows.length + 1;
     pushRow(["报价保费汇总 / Premium Summary"], "section");
@@ -972,7 +977,7 @@
 
     const detailTitleRow = rows.length + 1;
     pushRow(["人员保费明细 Member Premium Details"], "section");
-    merges.push(`A${detailTitleRow}:D${detailTitleRow}`);
+    merges.push(`A${detailTitleRow}:${detailLastColumn}${detailTitleRow}`);
     const detailHeaders = detailColumns.map(({ variant, variantIndex, type }) => {
       const plan = getPlan(variant.planCode);
       const planLabel = `方案 ${variantIndex + 1} · ${proposalPlanCode(plan)}`;
