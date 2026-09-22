@@ -14,6 +14,7 @@ const styleEnd = appSource.indexOf("async function exportExcel", styleStart);
 const windowMock = { JSZip, PPProposalTemplateLock: { lockToProposalTemplate: async bytes => bytes } };
 const workbookHelpers = new Function("window", "XLSX", `${appSource.slice(styleStart, styleEnd)}; return { prepareDisplaySheet, applyWorkbookLayout, styleWorkbookBytes };`)(windowMock, XLSX);
 const outputPath = join(tmpdir(), "pp-sme-v4-validation.xlsx");
+const quotationLayoutOutputPath = join(tmpdir(), "pp-sme-quotation-layout-validation.xlsx");
 
 const employee = (id, age, extra = {}) => ({ id, name: id, type: "employee", employeeId: id, age, nature: "new", ...extra });
 const variant = (id, planCode, extra = {}) => ({ id, planCode, name: id, maternity: "none", wellness: "none", dental: "none", vision: "none", preExisting: "standard", ...extra });
@@ -66,10 +67,10 @@ const fixedCases = [
       const quotation = model.sheets.find(sheet => sheet.name === "报价 Quotation");
       assert.equal(quotation.rows[1][0], "团体中文名称 \nCompany Name (Chinese)");
       assert.equal(quotation.rows[1].length, 8);
-      assert.ok(quotation.merges.includes("A1:H1"));
-      assert.ok(quotation.merges.includes("D2:H2"));
-      assert.ok(quotation.merges.includes("A7:H7"));
-      assert.ok(quotation.merges.includes("A15:H15"));
+      assert.ok(quotation.merges.includes("A1:D1"));
+      assert.ok(quotation.merges.includes("A7:C7"));
+      assert.ok(quotation.merges.includes("A15:D15"));
+      assert.equal(quotation.merges.some(ref => /:H\d+$/.test(ref)), false);
       const medicalSummary = quotation.rows.find(row => row[0] === "医疗保费 / Medical Premium");
       assert.equal(typeof medicalSummary[1], "number");
       assert.equal(typeof medicalSummary[2], "number");
@@ -127,9 +128,7 @@ const fixedCases = [
       const outputZip = await JSZip.loadAsync(styledBytes);
       const quotationXml = await outputZip.file("xl/worksheets/sheet1.xml").async("string");
       assert.match(quotationXml, /<c\b[^>]*r="D2"[^>]*\bs="5"/);
-      for (const cell of ["D2", "E2", "F2", "G2", "H2"]) {
-        assert.match(quotationXml, new RegExp(`<c\\b[^>]*r="${cell}"[^>]*\\bs="5"`), `${cell} must retain the blank English company-name fill`);
-      }
+      assert.doesNotMatch(quotationXml, /<mergeCell ref="D2:H2"/);
       const quotationStyleId = cell => quotationXml.match(new RegExp(`<c\\b[^>]*r="${cell}"[^>]*\\bs="(\\d+)"`))?.[1];
       for (const cell of ["A10", "A11", "A12"]) assert.equal(quotationStyleId(cell), quotationStyleId("A9"), `${cell} must match the Medical Premium label formatting`);
       for (const cell of ["B10", "B11", "B12"]) assert.equal(quotationStyleId(cell), quotationStyleId("B9"), `${cell} must match the Medical Premium amount formatting`);
@@ -207,6 +206,51 @@ const fixedCases = [
     },
   },
   {
+    name: "Quotation 两方案无可选福利时动态收口",
+    async check() {
+      const firstPlan = variant("worldwide", "P4WW");
+      const secondPlan = variant("greaterChina", "P201");
+      const people = [
+        employee("LIU XIAOLIN", 64, { assignment: firstPlan.id }),
+        employee("王金波", 53, { assignment: secondPlan.id }),
+        employee("李潇雅", 39, { assignment: secondPlan.id }),
+        employee("缪小牛", 41, { assignment: secondPlan.id }),
+        employee("闫尧", 41, { assignment: secondPlan.id }),
+        employee("邵雪", 38, { assignment: secondPlan.id }),
+        employee("测试人员", 36, { assignment: secondPlan.id }),
+      ];
+      const model = core.buildWorkbookModel({
+        companyCn: "报价页布局回归测试",
+        companyEn: "",
+        startDate: "2026-10-17",
+        endDate: "2027-10-16",
+        mode: "group",
+        people,
+        variants: [firstPlan, secondPlan],
+        selectedPlanCodes: ["P4WW", "P201"],
+      });
+      const quotation = model.sheets.find(sheet => sheet.name === "报价 Quotation");
+      assert.equal(quotation.widths.length, 5);
+      assert.deepEqual(quotation.merges, ["A1:D1", "A7:C7", "A11:D11"]);
+
+      const workbook = XLSX.utils.book_new();
+      const displayModel = { ...model, sheets: model.sheets.map(workbookHelpers.prepareDisplaySheet) };
+      displayModel.sheets.forEach(sheet => {
+        const worksheet = XLSX.utils.aoa_to_sheet(sheet.rows, { sheetStubs: true });
+        workbookHelpers.applyWorkbookLayout(worksheet, sheet);
+        XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name);
+      });
+      const rawBytes = XLSX.write(workbook, { bookType: "xlsx", type: "array", compression: true, cellStyles: true });
+      const styledBytes = await workbookHelpers.styleWorkbookBytes(rawBytes, displayModel);
+      writeFileSync(quotationLayoutOutputPath, Buffer.from(styledBytes));
+      const readBack = XLSX.read(styledBytes, { type: "array", cellStyles: true, sheetStubs: true });
+      const sheet = readBack.Sheets["报价 Quotation"];
+      assert.equal(sheet["!ref"], "A1:E19");
+      assert.equal(sheet["!cols"].length, 5);
+      assert.deepEqual(sheet["!merges"].map(XLSX.utils.encode_range), ["A1:D1", "A7:C7", "A11:D11"]);
+    },
+  },
+  {
     name: "多方案 TOB 横向并列输出",
     check() {
       const state = {
@@ -245,3 +289,4 @@ for (const testCase of fixedCases) {
   console.log(`PASS ${testCase.name}`);
 }
 console.log(`PASS XLSX write/read: ${outputPath}`);
+console.log(`PASS Quotation layout XLSX: ${quotationLayoutOutputPath}`);

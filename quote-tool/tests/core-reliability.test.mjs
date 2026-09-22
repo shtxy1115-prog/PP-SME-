@@ -298,7 +298,7 @@ test("导出模型包含必需 sheets、状态/来源/共享责任与可解析�
   assert.equal(model.metadata.sourceWorkbook, "PP & Prosper SME 方案整理表 20260814 v2.xlsx");
 });
 
-test("报价导出遵循 Proposal 模板的固定工作表与列布局", () => {
+test("报价导出按实际内容收口，并保留 Proposal 模板的分区宽度", () => {
   const model = core.buildWorkbookModel({
     companyCn: "测试团体",
     companyEn: "Test Group",
@@ -311,14 +311,15 @@ test("报价导出遵循 Proposal 模板的固定工作表与列布局", () => {
     pcpDirectBilling: false,
   });
   const quotation = model.sheets.find(sheet => sheet.name === "报价 Quotation");
-  assert.equal(quotation.widths.length, 8);
-  assert.equal(quotation.merges.includes("A1:H1"), true);
-  assert.equal(quotation.merges.includes("D2:H2"), true);
-  assert.equal(quotation.merges.includes("A7:H7"), true);
-  assert.equal(quotation.merges.includes("A11:H11"), true);
-  assert.equal(quotation.rows.every(row => row.length <= 8), true);
+  assert.equal(quotation.widths.length, 5);
+  assert.equal(quotation.merges.includes("A1:D1"), true);
+  assert.equal(quotation.merges.includes("A7:C7"), true);
+  assert.equal(quotation.merges.includes("A11:D11"), true);
+  assert.equal(quotation.merges.some(ref => /:H\d+$/.test(ref)), false);
+  assert.equal(quotation.rows.every(row => row.length === 5), true);
   assert.equal(quotation.rows.filter(row => String(row[0]).includes("人员保费明细")).length, 1);
-  assert.equal(quotation.rows.find(row => row[0] === "人员 / Member").length, 8);
+  assert.equal(quotation.rows.find(row => row[0] === "人员 / Member").length, 5);
+  assert.deepEqual(quotation.styledBlankCells, ["D2"]);
 
   const premium = model.sheets.find(sheet => sheet.name === "费率 Premium");
   assert.equal(premium.widths.length, 3);
@@ -329,7 +330,7 @@ test("报价导出遵循 Proposal 模板的固定工作表与列布局", () => {
   assert.equal(premium.rows.some(row => row.some(value => String(value).includes("展示实际费率"))), false);
 
   const tob = model.sheets.find(sheet => sheet.name === "保险责任TOB");
-  assert.deepEqual(quotation.widths, [36, 44.796875, 41.796875, 30.796875, 33, 29.59765625, 26, 29]);
+  assert.deepEqual(quotation.widths, [36, 44.796875, 41.796875, 30.796875, 33]);
   assert.deepEqual(tob.widths, [34.796875, 48.19921875, 22.796875, 24.796875, 22.796875, 24.796875]);
   assert.equal(tob.rows.every(row => row.length <= 6), true);
   assert.ok(tob.merges.some(ref => ref === "A4:B4"));
@@ -357,6 +358,11 @@ test("Quotation 逐方案分列，仅显示已选择的可选福利保费", () =
 
   const noOptions = modelFor([variant("one", "P201"), variant("two", "P4WW")]);
   assert.equal(noOptions.rows.some(row => /可选(?:生育|体检|牙科|眼科)福利保费/.test(String(row[0]))), false);
+  assert.equal(noOptions.widths.length, 5);
+  assert.ok(noOptions.merges.includes("A1:D1"));
+  assert.ok(noOptions.merges.includes("A7:C7"));
+  assert.ok(noOptions.merges.includes("A11:D11"));
+  assert.equal(noOptions.merges.some(ref => /:H\d+$/.test(ref)), false);
   const noOptionHeader = noOptions.rows.find(row => row[0] === "人员 / Member");
   assert.deepEqual(noOptionHeader.slice(0, 5), [
     "人员 / Member",

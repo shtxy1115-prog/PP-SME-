@@ -245,17 +245,15 @@ test("空英文名称单元格保留 Quotation 模板底色", () => {
   const styleWorksheetXml = new Function(`${app.slice(helperStart, helperEnd)}; return styleWorksheetXml;`)();
   const sheet = {
     name: "报价 Quotation",
-    rows: [[], ["中文名称", "测试公司", "英文名称", "", "", "", "", ""]],
+    rows: [[], ["中文名称", "测试公司", "英文名称", ""]],
     rowStyles: ["title", "meta"],
-    merges: ["D2:H2"],
+    merges: [],
+    styledBlankCells: ["D2"],
   };
-  const cells = ["D2", "E2", "F2", "G2", "H2"].map(ref => `<c r="${ref}"/>`).join("");
-  const xml = `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:H2"/><sheetData><row r="2"><c r="A2"/><c r="B2"/><c r="C2"/>${cells}</row></sheetData></worksheet>`;
+  const xml = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:D2"/><sheetData><row r="2"><c r="A2"/><c r="B2"/><c r="C2"/><c r="D2"/></row></sheetData></worksheet>';
   const styled = styleWorksheetXml(xml, sheet);
-  ["D2", "E2", "F2", "G2", "H2"].forEach(ref => {
-    const cell = styled.match(new RegExp(`<c\\b[^>]*r="${ref}"[^>]*>`))?.[0] || "";
-    assert.match(cell, /s="5"/, `${ref} 空白英文名区域未应用模板值单元格底色`);
-  });
+  const cell = styled.match(/<c\b[^>]*r="D2"[^>]*>/)?.[0] || "";
+  assert.match(cell, /s="5"/, "D2 空白英文名值单元格未应用模板底色");
 });
 
 test("TOB 纵向共享限额合并区按完整宽度换行并继承边框", () => {

@@ -1331,8 +1331,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       ...optionalTypes.filter(type => (variant?.[type] || "none") !== "none")
         .map(type => ({ variant, variantIndex, type })),
     ]);
-    const columnCount = Math.max(8, variants.length + 1, 3 + detailColumns.length);
-    const lastColumn = columnName(columnCount - 1);
+    const columnCount = Math.max(4, 3 + detailColumns.length);
+    const summaryLastColumn = columnName(Math.max(1, variants.length));
     const blanks = count => Array.from({ length: count }, () => "");
     const pad = values => [...values, ...blanks(Math.max(0, columnCount - values.length))];
     const planHeaders = variants.map((variant, index) => `方案 ${index + 1}\n${proposalPlanLabel(variant.planCode)}`);
@@ -1348,20 +1348,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const typeLabel = { employee: "员工\nEmployee", spouse: "配偶\nSpouse", child: "子女\nChild" };
     const rows = [];
     const rowStyles = [];
-    const merges = [`A1:${lastColumn}1`];
+    const merges = ["A1:D1"];
     const pushRow = (row, style) => { rows.push(pad(row)); rowStyles.push(style); };
 
     pushRow(["Prosper × PP SME 团体医疗保险报价表 Group Medical Insurance Quotation"], "title");
     pushRow(["团体中文名称 \nCompany Name (Chinese)", state.companyCn || "", "团体英文名称 \nCompany Name (English)", state.companyEn || ""], "meta");
     pushRow(["保障期限 \nPolicy Period", `${state.startDate || ""}  至 / to ${state.endDate || ""}`, "参保人数 \nInsured Members", `${people.length} 人 / members`], "meta");
-    if (columnCount > 4) merges.push(`D2:${lastColumn}2`);
     pushRow(["方案 / Quotation Plan", ...displayPlanHeaders], "meta");
     pushRow(["区域 / Area", ...(areaHeaders.length ? areaHeaders : ["—"])], "meta");
     pushRow(["方案调整选择\nPlan Change Options", ...(optionHeaders.length ? optionHeaders : ["—"])], "meta");
 
     const summaryTitleRow = rows.length + 1;
     pushRow(["报价保费汇总 / Premium Summary"], "section");
-    merges.push(`A${summaryTitleRow}:${lastColumn}${summaryTitleRow}`);
+    merges.push(`A${summaryTitleRow}:${summaryLastColumn}${summaryTitleRow}`);
     pushRow(["保费项目 / Premium Item", ...displayPlanHeaders], "header");
     const pushPremiumRow = (label, getter, style = "meta") => {
       const values = variants.length ? variants.map(getter) : ["—"];
@@ -1384,7 +1383,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
     const detailTitleRow = rows.length + 1;
     pushRow(["人员保费明细 Member Premium Details"], "section");
-    merges.push(`A${detailTitleRow}:${lastColumn}${detailTitleRow}`);
+    merges.push(`A${detailTitleRow}:D${detailTitleRow}`);
     const detailHeaders = detailColumns.map(({ variant, variantIndex, type }) => {
       const plan = getPlan(variant.planCode);
       const planLabel = `方案 ${variantIndex + 1} · ${proposalPlanCode(plan)}`;
@@ -1413,7 +1412,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
     const defaultWidths = [36, 44.796875, 41.796875, 30.796875, 33, 29.59765625, 26, 29];
     const widths = Array.from({ length: columnCount }, (_, index) => defaultWidths[index] || 30.796875);
-    return { name: "报价 Quotation", rows, rowStyles, widths, merges };
+    return { name: "报价 Quotation", rows, rowStyles, widths, merges, styledBlankCells: ["D2"] };
   }
 
   const PREMIUM_DISPLAY_LABELS = Object.freeze({
@@ -2524,6 +2523,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const styled = xml.replace(/<c\b([^>]*?)(\/?)>/g, (opening, attributes, selfClosing) => {
       const refMatch = attributes.match(/\br="([A-Z]+)(\d+)"/);
       if (!refMatch) return opening;
+      const cellRef = `${refMatch[1]}${refMatch[2]}`;
       const rowIndex = Number(refMatch[2]) - 1;
       const columnIndex = columnIndexFromName(refMatch[1]);
       const value = sheet.rows?.[rowIndex]?.[columnIndex];
@@ -2533,7 +2533,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const end = columnIndexFromName(match[3]);
         return columnIndex >= start && columnIndex <= end;
       });
-      if ((value === "" || value === null || value === undefined) && !merge) return opening;
+      const forceStyledBlank = (sheet.styledBlankCells || []).includes(cellRef);
+      if ((value === "" || value === null || value === undefined) && !merge && !forceStyledBlank) return opening;
       const styleColumnIndex = merge ? columnIndexFromName(merge[1]) : columnIndex;
       const styleValue = sheet.rows?.[rowIndex]?.[styleColumnIndex];
       const kind = workbookRowKind(sheet, rowIndex);

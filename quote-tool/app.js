@@ -779,6 +779,7 @@
     const styled = xml.replace(/<c\b([^>]*?)(\/?)>/g, (opening, attributes, selfClosing) => {
       const refMatch = attributes.match(/\br="([A-Z]+)(\d+)"/);
       if (!refMatch) return opening;
+      const cellRef = `${refMatch[1]}${refMatch[2]}`;
       const rowIndex = Number(refMatch[2]) - 1;
       const columnIndex = columnIndexFromName(refMatch[1]);
       const value = sheet.rows?.[rowIndex]?.[columnIndex];
@@ -788,7 +789,8 @@
         const end = columnIndexFromName(match[3]);
         return columnIndex >= start && columnIndex <= end;
       });
-      if ((value === "" || value === null || value === undefined) && !merge) return opening;
+      const forceStyledBlank = (sheet.styledBlankCells || []).includes(cellRef);
+      if ((value === "" || value === null || value === undefined) && !merge && !forceStyledBlank) return opening;
       const styleColumnIndex = merge ? columnIndexFromName(merge[1]) : columnIndex;
       const styleValue = sheet.rows?.[rowIndex]?.[styleColumnIndex];
       const kind = workbookRowKind(sheet, rowIndex);
