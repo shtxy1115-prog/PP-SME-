@@ -135,6 +135,8 @@ const fixedCases = [
       for (const cell of ["B10", "B11", "B12"]) assert.equal(quotationStyleId(cell), quotationStyleId("B9"), `${cell} must match the Medical Premium amount formatting`);
       const tobXml = await outputZip.file("xl/worksheets/sheet3.xml").async("string");
       assert.match(tobXml, /<mergeCell ref="C\d+:D\d+"/);
+      const hospiceRowNumber = hospiceSourceRow + 1;
+      assert.match(tobXml, new RegExp(`<mergeCell ref="A${hospiceRowNumber}:F${hospiceRowNumber}"`), "Hospice Care heading must merge across the full multi-plan TOB row");
       const readBack = XLSX.read(readFileSync(outputPath), { type: "buffer", cellStyles: true, sheetStubs: true });
       assert.deepEqual(readBack.SheetNames, ["报价 Quotation", "费率 Premium", "保险责任TOB", "昂贵医院 List of HCPs", "预授权 Pre-auth", "重大既往症 Catastrophic PEC", "参保条件 Eligibility"]);
       const premiumText = XLSX.utils.sheet_to_json(readBack.Sheets["费率 Premium"], { header: 1, raw: false }).flat().join("\n");
@@ -151,7 +153,7 @@ const fixedCases = [
       const onlineHeight = readBack.Sheets["保险责任TOB"]["!rows"][onlineSourceRow].hpt;
       const hospiceHeight = readBack.Sheets["保险责任TOB"]["!rows"][hospiceSourceRow].hpt;
       assert.ok(onlineHeight > 300 && onlineHeight <= 409.5, "Online Consultations coverage must not be clipped by the old 300pt cap");
-      assert.ok(hospiceHeight > 300 && hospiceHeight <= 409.5, "the full Hospice description must fit within Excel's row-height limit");
+      assert.ok(hospiceHeight > 120 && hospiceHeight <= 409.5, "the full-width Hospice heading must exceed the old section-height cap without exceeding Excel's limit");
       const hospiceCell = XLSX.utils.encode_cell({ r: hospiceSourceRow, c: 0 });
       const hospiceReadback = String(readBack.Sheets["保险责任TOB"][hospiceCell]?.v ?? "");
       assert.equal(hospiceReadback.replace(/\n/g, ""), tobSource.rows[hospiceSourceRow][0].replace(/\n/g, ""));

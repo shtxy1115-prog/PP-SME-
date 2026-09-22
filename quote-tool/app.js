@@ -632,7 +632,10 @@
       const isTob = sheet.name.includes("TOB");
       if (kind === "title") return { hpt: sheet.name.includes("TOB") ? Math.min(72, Math.max(56, computed)) : 38 };
       if (kind === "header") return { hpt: Math.min(82, Math.max(42, computed)) };
-      if (kind === "section") return { hpt: Math.min(120, Math.max(28, computed)) };
+      if (kind === "section") {
+        const sectionMax = isTob ? MAX_EXCEL_ROW_HEIGHT_PT : 120;
+        return { hpt: Math.min(sectionMax, Math.max(28, computed)) };
+      }
       return { hpt: Math.min(isTob ? MAX_EXCEL_ROW_HEIGHT_PT : 170, Math.max(kind === "meta" ? 26 : 28, computed)) };
     });
     applyWorksheetPrintLayout(worksheet, sheet);

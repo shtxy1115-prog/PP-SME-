@@ -472,7 +472,8 @@ test("TOB 复用修订后的福利模板文本、共享合并和条件责任", (
 
   const hospiceIndex = parallelTob.rows.findIndex(row => String(row[0]).startsWith("临终关怀费\nHospice Care"));
   const mentalTitleIndex = parallelTob.rows.findIndex(row => row[0] === "精神和心理障碍治疗费\nMental Health and Psychotherapeutic Treatment");
-  assert.equal(parallelTob.rowStyles[hospiceIndex], "benefitHeading");
+  assert.equal(parallelTob.rowStyles[hospiceIndex], "section");
+  assert.ok(parallelTob.merges.includes(`A${hospiceIndex + 1}:F${hospiceIndex + 1}`));
   assert.equal(parallelTob.rowStyles[mentalTitleIndex], "section");
 });
 

@@ -289,14 +289,14 @@ test("TOB 纵向共享限额合并区按完整宽度换行并继承边框", () =
   });
 });
 
-test("临终关怀描述的福利名称格沿用精神心理障碍标题格式", () => {
+test("临终关怀描述沿用精神心理障碍的标题样式", () => {
   const helperStart = app.indexOf("function mergedColumnWidth");
   const helperEnd = app.indexOf("async function styleWorkbookBytes", helperStart);
   const styleWorksheetXml = new Function(`${app.slice(helperStart, helperEnd)}; return styleWorksheetXml;`)();
   const sheet = {
     name: "保险责任TOB",
     rows: [[], ["临终关怀费\nHospice Care", "", "", ""]],
-    rowStyles: ["title", "benefitHeading"],
+    rowStyles: ["title", "section"],
     merges: ["A2:B2", "C2:D2"],
   };
   const xml = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:D2"/><sheetData><row r="2"><c r="A2"/><c r="B2"/><c r="C2"/><c r="D2"/></row></sheetData></worksheet>';
@@ -307,6 +307,6 @@ test("临终关怀描述的福利名称格沿用精神心理障碍标题格式",
   });
   ["C2", "D2"].forEach(ref => {
     const cell = styled.match(new RegExp(`<c\\b[^>]*r="${ref}"[^>]*>`))?.[0] || "";
-    assert.match(cell, /s="19"/, `${ref} 的赔付责任内容不应误用标题样式`);
+    assert.match(cell, /s="15"/, `${ref} 未沿用同一行的标题样式`);
   });
 });
