@@ -28,6 +28,17 @@ const variant = (id, planCode, extra = {}) => ({
   ...extra,
 });
 
+test("自付比例源值和正式输出均使用百分比，而不是裸 0/1", () => {
+  const item = core.BENEFIT_DATA.find(benefit => benefit.benefitId === "POLICY_COPAY");
+  for (const plan of core.PLANS) assert.equal(item.planValues[plan.code], "0%");
+  for (const [code, expected] of [["none", "0%"], ["outpatient_from_sixth_20", "20%"]]) {
+    const selected = variant(code, "P201", { copay: code });
+    const row = core.buildTobSheet(selected, 0).rows.find(values => String(values[0]).startsWith("自付比例"));
+    assert.match(row[2], new RegExp(expected));
+    assert.doesNotMatch(row[2], /^\s*[01]\s*$/);
+  }
+});
+
 test("正式计划模型仅保留 Plan 3 WWE 与 Plan 4 WW/WWE", () => {
   const plans = core.PLANS;
   const invalidPlan3Worldwide = ["P3", "WW"].join("");
