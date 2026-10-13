@@ -1141,6 +1141,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     let coverage = selected || !["maternity", "wellness", "dental", "vision"].includes(item.section)
       ? item.planValues[plan?.code] ?? ""
       : "不涵盖\nNot Covered";
+    if (item.section === "hospital" && /^(?:0|1|0\.\d+)$/.test(String(coverage))) {
+      coverage = `${Number(coverage) * 100}%`;
+    }
     if (item.benefitId === "ONLINE_CONSULTATIONS") {
       coverage = "中国大陆公立医院开设的互联网医院：\nPublic Internet hospitals in Mainland China\n赔付至门诊医疗上限，且受限于门诊处方药上限\nCovered up to outpatient maximum and outpatient prescription drug benefit maximum\n\n授权通过的私立医院/诊所：\nApproved private providers:\n赔付至门诊医疗上限，且受限于门诊处方药上限\nCovered up to outpatient maximum and outpatient prescription drug benefit maximum";
     }

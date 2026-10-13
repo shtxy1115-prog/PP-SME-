@@ -39,6 +39,17 @@ test("自付比例源值和正式输出均使用百分比，而不是裸 0/1", (
   }
 });
 
+test("TOB 医院范围与自付的比例全部显示为百分比", () => {
+  const highCostByPlan = { P101: "100%", P201: "100%", P203: "0%", P3WWE: "20%", P4WW: "0%" };
+  for (const [planCode, expectedHighCost] of Object.entries(highCostByPlan)) {
+    const rows = core.buildTobSheet(variant(planCode, planCode), 0).rows;
+    for (const [name, expected] of [["公立医院普通部", "0%"], ["私立医院或诊所", "0%"], ["昂贵医疗机构", expectedHighCost]]) {
+      const row = rows.find(values => String(values[0]).startsWith(name));
+      assert.equal(row[2], expected, `${planCode} ${name}`);
+    }
+  }
+});
+
 test("正式计划模型仅保留 Plan 3 WWE 与 Plan 4 WW/WWE", () => {
   const plans = core.PLANS;
   const invalidPlan3Worldwide = ["P3", "WW"].join("");

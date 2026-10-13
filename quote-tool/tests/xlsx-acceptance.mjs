@@ -141,6 +141,11 @@ const fixedCases = [
       const premiumText = XLSX.utils.sheet_to_json(readBack.Sheets["费率 Premium"], { header: 1, raw: false }).flat().join("\n");
       assert.match(premiumText, /P201/);
       const tobText = XLSX.utils.sheet_to_json(readBack.Sheets["保险责任TOB"], { header: 1, raw: false }).flat().join("\n");
+      for (const [label, expected] of [["公立医院普通部", "0%"], ["私立医院或诊所", "0%"], ["昂贵医疗机构", "100%"]]) {
+        const rowIndex = tobSource.rows.findIndex(row => String(row[0]).startsWith(label));
+        const address = XLSX.utils.encode_cell({ r: rowIndex, c: 2 });
+        assert.equal(readBack.Sheets["保险责任TOB"][address]?.v, expected, `${label} must show a percentage in the final Excel file`);
+      }
       assert.match(tobText, /理疗费/);
       assert.match(tobText, /PREGNANCY_COMPLICATIONS|妊娠并发症/);
       assert.match(tobText, /自付比例指的是被保险人发生保险责任内费用/);
