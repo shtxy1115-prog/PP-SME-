@@ -75,6 +75,13 @@
     <section class="card content-section" id="people">
       <div class="section-heading with-action"><div class="heading-left"><span class="step-number">03</span><div><p class="eyebrow">参保人员 / INSURED MEMBERS</p><h2>人员清单</h2><p class="section-subtitle">按人员类型、年龄和方案分配逐行核对报价状态。</p></div></div><button id="addPersonButton" class="secondary" type="button">＋ 添加人员</button></div>
       <p id="peopleHint" class="hint">员工与家属按本人年龄计费。65–69岁有自动费率；70岁以上或来源费率缺失时进入单独核保。</p>
+      <div class="bulk-row">
+        <button id="importPeopleButton" class="secondary" type="button">批量导入人员清单</button>
+        <button id="peopleTemplateButton" class="text-button" type="button">下载人员清单模板</button>
+        <input id="peopleFile" type="file" accept=".xlsx,.xls,.csv" hidden>
+      </div>
+      <p class="hint">支持 Excel / CSV，读取第一张工作表并追加人员；姓名必填，年龄或出生日期二选一。家属填写关联员工编号；多方案填写计划代码或唯一方案名称。</p>
+      <p id="peopleImportResult" class="hint" role="status" style="white-space:pre-wrap"></p>
       <div class="table-wrap people-table-wrap">
         <table id="peopleTable" class="people-table">
           <colgroup><col class="col-name"><col class="col-type"><col class="col-employee-id"><col class="col-related-id"><col class="col-gender"><col class="col-dob"><col class="col-age"><col class="col-status"><col class="col-manual"><col class="col-assignment"><col class="col-actions"></colgroup>
@@ -119,6 +126,7 @@
   <script src="vendor/xlsx.full.min.js"></script>
   <script src="vendor/jszip.min.js"></script>
   <script src="core.js"></script>
+  <script src="people-import.js"></script>
   <script src="proposal-template-static.js"></script>
   <script src="template-lock.js"></script>
   <script src="app.js"></script>

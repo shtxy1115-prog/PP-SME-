@@ -447,6 +447,39 @@
     saveState(); update();
   }
 
+  async function importPeopleFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const resultElement = $("peopleImportResult");
+    try {
+      if (!/\.(xlsx|xls|csv)$/i.test(file.name)) throw new Error("请选择 Excel 或 CSV 文件。");
+      if (file.size > 10 * 1024 * 1024) throw new Error("文件超过 10MB，请拆分清单后导入。");
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
+      const rows = window.PeopleImport.sheetRows(XLSX, workbook.Sheets[workbook.SheetNames[0]]);
+      const result = window.PeopleImport.parseRows(rows, { startDate: $("startDate").value, mode: quoteMode, variants: quoteVariants, existingPeople: people });
+      if (result.errors.length) {
+        resultElement.textContent = `未导入，请修正后重新上传：\n${result.errors.join("\n")}`;
+        return;
+      }
+      people.push(...result.people.map(normalizePerson));
+      saveState();
+      update();
+      resultElement.textContent = `已追加 ${result.people.length} 人。请核对人员信息和报价状态。`;
+    } catch (error) {
+      resultElement.textContent = `未导入：${error.message || "文件无法读取，请检查文件格式。"}`;
+    } finally {
+      event.target.value = "";
+    }
+  }
+
+  function downloadPeopleTemplate() {
+    const workbook = XLSX.utils.book_new();
+    const sheet = XLSX.utils.aoa_to_sheet([["姓名", "人员类型", "年龄", "出生日期", "员工编号", "关联员工编号", "性别", "方案"]]);
+    sheet["!cols"] = [20, 14, 10, 18, 16, 20, 10, 24].map(wch => ({ wch }));
+    XLSX.utils.book_append_sheet(workbook, sheet, "人员清单");
+    XLSX.writeFile(workbook, "PP_SME_人员清单导入模板.xlsx");
+  }
+
   function loadDemo() {
     people = [
       { id: "E001", name: "员工001", type: "employee", employeeId: "E001", age: 33, gender: "male" },
@@ -861,6 +894,9 @@
     $("startDate").addEventListener("change", () => { updateEndDate(); people.forEach(person => { if (person.dob) person.age = ageAtStart(person.dob) ?? ""; }); saveState(); update(); });
     $("pcpDirectBilling").addEventListener("change", () => { saveState(); update(); });
     $("addPersonButton").addEventListener("click", addPerson);
+    $("importPeopleButton").addEventListener("click", () => $("peopleFile").click());
+    $("peopleFile").addEventListener("change", importPeopleFile);
+    $("peopleTemplateButton").addEventListener("click", downloadPeopleTemplate);
     $("demoButton").addEventListener("click", loadDemo);
     $("clearButton").addEventListener("click", clearAllData);
     $("clearAllButton").addEventListener("click", clearAllData);
