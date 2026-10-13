@@ -104,6 +104,9 @@
       copayOption = storedCopay?.code || (storedVariants.some(variant => variant.copay === "outpatient_from_sixth_20") ? "outpatient_from_sixth_20" : "none");
       preExistingOption = storedPreExisting?.code || (storedVariants.some(variant => variant.preExisting === "fmu") ? "fmu" : "standard");
       people = Array.isArray(state.people) ? state.people.map(normalizePerson) : [];
+      people.filter(person => person.type === "employee" && !person.employeeId).forEach(person => {
+        person.employeeId = window.PeopleImport.nextEmployeeId(people);
+      });
       selectedPlanCodes = Array.isArray(state.selectedPlanCodes) ? state.selectedPlanCodes.filter(code => core.getPlan(code)) : [];
       quoteVariants = storedVariants
         .filter(variant => core.getPlan(variant.planCode))
@@ -193,7 +196,10 @@
       if (value !== core.QUOTE_STATUSES.MANUAL_RATE) person.manualMedicalPremium = "";
     } else person[field] = value;
     if (field === "dob") person.age = ageAtStart(person.dob) ?? "";
-    if (field === "type" && person.type === "employee") person.relatedEmployeeId = "";
+    if (field === "type" && person.type === "employee") {
+      person.relatedEmployeeId = "";
+      if (!person.employeeId) person.employeeId = window.PeopleImport.nextEmployeeId(people);
+    }
     if (field === "type" && person.type !== "employee") person.employeeId = "";
   }
 
@@ -443,7 +449,7 @@
   }
 
   function addPerson() {
-    people.push(normalizePerson({ id: makeId("person"), name: `人员${people.length + 1}`, type: "employee", age: "" }, people.length));
+    people.push(normalizePerson({ id: makeId("person"), name: `人员${people.length + 1}`, type: "employee", employeeId: window.PeopleImport.nextEmployeeId(people), age: "" }, people.length));
     saveState(); update();
   }
 
@@ -474,8 +480,8 @@
 
   function downloadPeopleTemplate() {
     const workbook = XLSX.utils.book_new();
-    const sheet = XLSX.utils.aoa_to_sheet([["姓名", "人员类型", "年龄", "出生日期", "员工编号", "关联员工编号", "性别", "方案"]]);
-    sheet["!cols"] = [20, 14, 10, 18, 16, 20, 10, 24].map(wch => ({ wch }));
+    const sheet = XLSX.utils.aoa_to_sheet([["姓名", "人员类型", "年龄", "出生日期", "员工编号", "关联员工编号", "关联员工姓名", "性别", "方案"]]);
+    sheet["!cols"] = [20, 14, 10, 18, 16, 20, 20, 10, 24].map(wch => ({ wch }));
     XLSX.utils.book_append_sheet(workbook, sheet, "人员清单");
     XLSX.writeFile(workbook, "PP_SME_人员清单导入模板.xlsx");
   }

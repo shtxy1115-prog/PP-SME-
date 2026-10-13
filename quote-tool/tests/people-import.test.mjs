@@ -41,3 +41,18 @@ test('多方案不能猜测分配，指定唯一计划可以匹配', () => {
   const result=importer.parseRows([['姓名','年龄','方案'],['甲',30,'P402']],{variants});
   assert.equal(result.people[0].assignment,'b');
 });
+test('无编号员工自动连续编号，跳过已有和本批显式编号', () => {
+  const rows=[['姓名','年龄','员工编号'],['甲',30,''],['乙',31,'E004'],['丙',32,'']];
+  const result=importer.parseRows(rows,{existingPeople:[{type:'employee',employeeId:'E002'}]});
+  assert.deepEqual(result.errors,[]);
+  assert.deepEqual(result.people.map(p=>p.employeeId),['E003','E004','E005']);
+  assert.equal(importer.nextEmployeeId([{type:'employee',employeeId:'E002'},{type:'employee',employeeId:'E004'}]),'E005');
+});
+test('无编号批量家属按唯一员工姓名关联，重名时阻止导入', () => {
+  const rows=[['姓名','年龄','人员类型','关联员工姓名'],['孩子',8,'子女','张三'],['张三',40,'员工','']];
+  const result=importer.parseRows(rows);
+  assert.deepEqual(result.errors,[]);
+  assert.equal(result.people[0].relatedEmployeeId,result.people[1].employeeId);
+  const ambiguous=importer.parseRows([['姓名','年龄','人员类型','关联员工姓名'],['张三',30,'员工',''],['张三',40,'员工',''],['孩子',8,'子女','张三']]);
+  assert.ok(ambiguous.errors.some(error=>error.includes('无法唯一匹配')));
+});
