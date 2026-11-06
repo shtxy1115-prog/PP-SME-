@@ -53,6 +53,16 @@ test("新页位于昂贵医院之后，原有四张固定页的 XML 完全不变
   assert.match(workbook.Sheets[workbook.SheetNames[4]].B48?.v, /Shanghai WA Optimum Health Care/);
 });
 
+test("参保条件固定页使用 5 人分界及 3 至 50 人范围", () => {
+  const workbook = XLSX.read(Buffer.from(embeddedTemplate, "base64"), { type: "buffer" });
+  const eligibility = workbook.Sheets["参保条件 Eligibility"];
+  assert.match(eligibility.B19.v, /3 to 50 insured persons/);
+  assert.match(eligibility.B28.v, /≥5人/);
+  assert.match(eligibility.B29.v, /fewer than 5 employees/);
+  assert.match(eligibility.B31.v, /fewer than 5 employees/);
+  assert.doesNotMatch([eligibility.B28.v, eligibility.B29.v, eligibility.B31.v].join("\n"), /11 employees|11EE/);
+});
+
 test("锁定导出兼容动态工作簿缺少 sharedStrings.xml 的正常场景", async () => {
   const workbook = XLSX.utils.book_new();
   for (const name of ["报价", "费率", "福利"]) {

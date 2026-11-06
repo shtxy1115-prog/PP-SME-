@@ -17,6 +17,12 @@ PKG_REL = 'http://schemas.openxmlformats.org/package/2006/relationships'
 OFFICE_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
 CONTENT = 'http://schemas.openxmlformats.org/package/2006/content-types'
 
+# This one-time builder must not overwrite later approved changes to the fixed pages.
+import re
+with ZipFile(BytesIO(base64.b64decode(re.search(r'BASE64 = "([^"]+)"', STATIC.read_text()).group(1)))) as current:
+    if 'xl/worksheets/sheet8.xml' in current.namelist():
+        raise SystemExit('Restricted-provider sheet is already embedded; refusing to overwrite the current fixed template.')
+
 
 def xml(data):
     return etree.fromstring(data)

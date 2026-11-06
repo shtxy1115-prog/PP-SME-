@@ -105,7 +105,7 @@
     makeBenefit({ benefitId: "PUBLIC_HOSPITAL", section: "hospital", cnName: "公立医院普通部、VIP或特需部", enName: "Public Hospitals general ward, VIP or international department", baseValues: { P1: "0", P2: "0", P3: "0", P4: "0" }, sourceRow: 10 }),
     makeBenefit({ benefitId: "PRIVATE_HOSPITAL", section: "hospital", cnName: "私立医院或诊所（不含昂贵医疗机构）", enName: "Private Hospital or Clinic (excluding High Cost Providers)", baseValues: { P1: "0", P2: "0", P3: "0", P4: "0" }, sourceRow: 11 }),
     makeBenefit({ benefitId: "HIGH_COST_PROVIDERS", section: "hospital", cnName: "昂贵医疗机构", enName: "High Cost Providers", cnDescription: "参见完整昂贵医疗机构列表", enDescription: "See the full List of High Cost Providers", baseValues: { P1: "1", P2: "100%", P3: "0.2", P4: "0" }, planOverrides: { P203: "0" }, sourceRow: 12 }),
-    makeBenefit({ benefitId: "NON_CATASTROPHIC_PEC", section: "underwriting", cnName: "一般既往症", enName: "Non-catastrophic Pre-existing Conditions", baseValues: { P1: "11EE及以上 100% Refund\n11EE以下：10,000元/年", P2: "11EE及以上 100% Refund\n11EE以下：10,000元/年", P3: "11EE及以上 100% Refund\n11EE以下：10,000元/年", P4: "11EE及以上 100% Refund\n11EE以下：10,000元/年" }, sourceRow: 14 }),
+    makeBenefit({ benefitId: "NON_CATASTROPHIC_PEC", section: "underwriting", cnName: "一般既往症", enName: "Non-catastrophic Pre-existing Conditions", baseValues: { P1: "员工≥5人：一般既往症无单项限额\n5 or more employees: general pre-existing conditions covered without a specific sub-limit\n员工＜5人：一般既往症限额10,000元/人/年\nFewer than 5 employees: CNY 10,000 per insured person per year", P2: "员工≥5人：一般既往症无单项限额\n5 or more employees: general pre-existing conditions covered without a specific sub-limit\n员工＜5人：一般既往症限额10,000元/人/年\nFewer than 5 employees: CNY 10,000 per insured person per year", P3: "员工≥5人：一般既往症无单项限额\n5 or more employees: general pre-existing conditions covered without a specific sub-limit\n员工＜5人：一般既往症限额10,000元/人/年\nFewer than 5 employees: CNY 10,000 per insured person per year", P4: "员工≥5人：一般既往症无单项限额\n5 or more employees: general pre-existing conditions covered without a specific sub-limit\n员工＜5人：一般既往症限额10,000元/人/年\nFewer than 5 employees: CNY 10,000 per insured person per year" }, sourceRow: 14 }),
     makeBenefit({ benefitId: "CATASTROPHIC_PEC", section: "underwriting", cnName: "重大既往症", enName: "Catastrophic Pre-existing Conditions", baseValues: { P1: "无赔付\nNot Covered", P2: "无赔付\nNot Covered", P3: "无赔付\nNot Covered", P4: "无赔付\nNot Covered" }, sourceRow: 15 }),
     makeBenefit({ benefitId: "WAITING_PERIOD", section: "underwriting", cnName: "等待期", enName: "Waiting period", baseValues: { P1: "无等待期\nNo waiting period", P2: "无等待期\nNo waiting period", P3: "无等待期\nNo waiting period", P4: "无等待期\nNo waiting period" }, sourceRow: 16 }),
     makeBenefit({ benefitId: "ANNUAL_DEDUCTIBLE", section: "deductible", cnName: "年免赔额", enName: "Annual Deductible", baseValues: { P1: "个人年度免赔额：0元\nIndividual Annual Deductible: CNY 0\n\n家庭年度免赔额：0元\nFamily Annual Deductible: CNY 0", P2: "个人年度免赔额：0元\nIndividual Annual Deductible: CNY 0\n\n家庭年度免赔额：0元\nFamily Annual Deductible: CNY 0", P3: "个人年度免赔额：0元\nIndividual Annual Deductible: CNY 0\n\n家庭年度免赔额：0元\nFamily Annual Deductible: CNY 0", P4: "个人年度免赔额：0元\nIndividual Annual Deductible: CNY 0\n\n家庭年度免赔额：0元\nFamily Annual Deductible: CNY 0" }, sourceRow: 18 }),
@@ -333,8 +333,8 @@
     },
     {
       code: "fmu",
-      label: "最高等级 FMU（11EE以下：全员提供个人健康告知；不承担一切既往症；医疗保费下调5%） / Highest-level FMU (below 11EE: full individual health declaration; no PEC; 5% Medical premium discount)",
-      description: "11EE以下：FMU需全员提供个人健康告知，不承担一切既往症。\nBelow 11EE: FMU requires every insured person to provide an individual health declaration; no pre-existing conditions are covered.",
+      label: "最高等级 FMU（员工少于5人：全员提供个人健康告知；不承担一切既往症；医疗保费下调5%） / Highest-level FMU (fewer than 5 employees: full individual health declaration; no PEC; 5% Medical premium discount)",
+      description: "员工少于5人：FMU需全员提供个人健康告知，不承担一切既往症。\nFewer than 5 employees: FMU requires every insured person to provide an individual health declaration; no pre-existing conditions are covered.",
       medicalDiscountRate: 0.05,
     },
   ]);
@@ -505,6 +505,7 @@
     const variants = Array.isArray(state.variants) ? state.variants : [];
     const employees = people.filter(person => person.type === "employee");
     if (people.length < 3) addMessage(messages, VALIDATION_LEVELS.ERROR, "MIN_MEMBERS", "被保险人至少 3 人 / At least 3 insured members are required.");
+    if (people.length > 50) addMessage(messages, VALIDATION_LEVELS.ERROR, "MAX_MEMBERS", "本计划最多 50 名被保险人 / This plan covers at most 50 insured members.");
     if (employees.length < 2) addMessage(messages, VALIDATION_LEVELS.ERROR, "MIN_EMPLOYEES", "员工至少 2 人 / At least 2 employees are required.");
     if (!variants.length) addMessage(messages, VALIDATION_LEVELS.ERROR, "NO_VARIANTS", "至少建立一个报价方案 / Create at least one quotation variant.");
 
@@ -566,6 +567,7 @@
       if (!plan) return;
       if (!getCopay(variant.copay || "none")) addMessage(messages, VALIDATION_LEVELS.ERROR, "UNKNOWN_COPAY_OPTION", `${plan.code} 使用了未知自付比例选项 / unknown policy co-payment option.`, { variantId: variant.id });
       if (!getPreExisting(variant.preExisting || "standard")) addMessage(messages, VALIDATION_LEVELS.ERROR, "UNKNOWN_PRE_EXISTING_OPTION", `${plan.code} 使用了未知既往症安排 / unknown pre-existing condition arrangement.`, { variantId: variant.id });
+      if (variant.preExisting === "fmu" && employees.length >= 5) addMessage(messages, VALIDATION_LEVELS.ERROR, "FMU_EMPLOYEE_LIMIT", "FMU 仅适用于员工少于 5 人的团体 / FMU is available only to groups with fewer than 5 employees.", { variantId: variant.id });
       Object.keys(OPTIONAL_SECTION_TYPES).forEach(type => {
         const code = variant[type] || "none";
         if (code === "none") return;
@@ -1122,7 +1124,7 @@
       "员工≤5人最多1个唯一Plan；员工>5人最多2个唯一Plan。重复同一Plan的变体不重复计数。\nGroup mode allows at most 1 unique Plan for up to 5 employees and 2 for more than 5; repeated variants of one Plan count once.",
       "Compare模式使用同一批人员跨所有变体比较，不按员工人数限制Plan数量。\nCompare mode uses the same people across variants and does not impose the Group Plan-count limit.",
       "核保状态：AUTO_QUOTABLE、MANUAL_RATE、PENDING_UW、INELIGIBLE；待人工费率不计入自动医疗总保费，也不以0冒充。\nQuote statuses are AUTO_QUOTABLE, MANUAL_RATE, PENDING_UW and INELIGIBLE; pending rates are excluded from automatic medical totals and never represented as a silent zero.",
-      "最高等级 FMU：11EE以下，FMU需全员提供个人健康告知，不承担一切既往症；选择 FMU 时医疗保费下调5%。\nHighest-level FMU: below 11EE, every insured person must provide an individual health declaration; no pre-existing conditions are covered; 5% Medical premium discount.",
+      "最高等级 FMU：员工少于5人，FMU需全员提供个人健康告知，不承担一切既往症；选择 FMU 时医疗保费下调5%。\nHighest-level FMU: for groups with fewer than 5 employees, every insured person must provide an individual health declaration; no pre-existing conditions are covered; 5% Medical premium discount.",
       "柏盛 PCP 首诊直付服务：需通过柏盛 PCP 首诊方可涵盖直付服务，急诊除外；可与门诊第6次起就诊自付20%选项同时选择。\nProsper PCP first-visit direct billing: Direct billing is available following an initial consultation with a Prosper PCP; emergency treatment is exempt from this requirement. It may be selected together with the 20% co-payment from the sixth outpatient visit.",
       "保费取整：Medical 折扣按对应费率计算后，调整后费率、折扣金额及最终保费均按人民币整元向上取整。\nPremium rounding: after applying the Medical discount rate, the adjusted rate, discount amount and final premium are rounded up to whole CNY.",
       "选择生育需要员工≥5人，且所有已选方案均包含生育；生育3年内不可变更仅作提示，当前无历史数据不执行伪造校验。\nMaternity requires at least 5 employees and inclusion in every selected variant; the three-year rule is warning-only because no policy history is available.",

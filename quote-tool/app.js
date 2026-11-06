@@ -310,7 +310,7 @@
         key: "preExisting",
         id: "fmuPreExisting",
         checked: preExistingOption === "fmu",
-        title: "最高等级 FMU（11EE 以下）",
+        title: "最高等级 FMU（员工少于 5 人）",
         description: "FMU 需全员提供个人健康告知，不承担一切既往症；Medical 保费下调 5%。",
       },
     ];

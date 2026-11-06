@@ -194,7 +194,7 @@ test("PCP 直付使用正式英文，Medical 折扣后按整元向上取整", ()
 test("FMU 是最高等级既往症选项，且可与自付比例和柏盛 PCP 直付同时选择", () => {
   const fmu = core.getPreExisting("fmu");
   assert.ok(fmu);
-  assert.match(fmu.label, /11EE以下.*全员.*个人健康告知/);
+  assert.match(fmu.label, /员工少于5人.*全员.*个人健康告知/);
   assert.match(fmu.description, /不承担一切既往症/);
   assert.equal(fmu.medicalDiscountRate, 0.05);
 
@@ -221,6 +221,26 @@ test("FMU 是最高等级既往症选项，且可与自付比例和柏盛 PCP �
   const preExistingRow = quotationRows.find(row => String(row[0]).includes("方案调整选择"));
   assert.match(preExistingRow.join("\n"), /FMU/);
   assert.match(preExistingRow.join("\n"), /不承担一切既往症/);
+});
+
+test("既往症与 FMU 统一使用 5 名员工分界，团体人数上限为 50", () => {
+  const getState = (count, preExisting = "standard") => ({
+    mode: "compare",
+    people: Array.from({ length: count }, (_, index) => employee(`E${index + 1}`, 30)),
+    variants: [variant("v1", "P201", { preExisting })],
+    selectedPlanCodes: ["P201"],
+  });
+  const codes = state => core.validate(state).map(message => message.code);
+  assert.equal(codes(getState(4, "fmu")).includes("FMU_EMPLOYEE_LIMIT"), false);
+  assert.equal(codes(getState(5, "fmu")).includes("FMU_EMPLOYEE_LIMIT"), true);
+  assert.equal(codes(getState(50)).includes("MAX_MEMBERS"), false);
+  assert.equal(codes(getState(51)).includes("MAX_MEMBERS"), true);
+  for (const preExisting of ["standard", "fmu"]) {
+    const tob = core.buildWorkbookModel(getState(4, preExisting)).sheets.find(sheet => sheet.name === "保险责任TOB");
+    const text = tob.rows.flat().join("\n");
+    assert.doesNotMatch(text, /11EE|fewer than 11/i);
+    assert.match(text, /少于5人|员工＜5人/);
+  }
 });
 
 test("儿童 25 岁仍可自动报价，26 岁进入 INELIGIBLE", () => {
