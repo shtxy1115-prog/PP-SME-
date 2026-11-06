@@ -5,6 +5,7 @@
 }(typeof globalThis !== "undefined" ? globalThis : this, function () {
   const FROZEN_SHEET_PATHS = [
     "xl/worksheets/sheet4.xml",
+    "xl/worksheets/sheet8.xml",
     "xl/worksheets/sheet5.xml",
     "xl/worksheets/sheet6.xml",
     "xl/worksheets/sheet7.xml",

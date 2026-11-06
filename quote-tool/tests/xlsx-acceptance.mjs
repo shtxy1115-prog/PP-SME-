@@ -137,7 +137,7 @@ const fixedCases = [
       const hospiceRowNumber = hospiceSourceRow + 1;
       assert.match(tobXml, new RegExp(`<mergeCell ref="A${hospiceRowNumber}:F${hospiceRowNumber}"`), "Hospice Care heading must merge across the full multi-plan TOB row");
       const readBack = XLSX.read(readFileSync(outputPath), { type: "buffer", cellStyles: true, sheetStubs: true });
-      assert.deepEqual(readBack.SheetNames, ["报价 Quotation", "费率 Premium", "保险责任TOB", "昂贵医院 List of HCPs", "预授权 Pre-auth", "重大既往症 Catastrophic PEC", "参保条件 Eligibility"]);
+      assert.deepEqual(readBack.SheetNames, ["报价 Quotation", "费率 Premium", "保险责任TOB", "昂贵医院 List of HCPs", "受限医院 Restricted Providers", "预授权 Pre-auth", "重大既往症 Catastrophic PEC", "参保条件 Eligibility"]);
       const premiumText = XLSX.utils.sheet_to_json(readBack.Sheets["费率 Premium"], { header: 1, raw: false }).flat().join("\n");
       assert.match(premiumText, /P201/);
       const tobText = XLSX.utils.sheet_to_json(readBack.Sheets["保险责任TOB"], { header: 1, raw: false }).flat().join("\n");

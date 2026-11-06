@@ -320,7 +320,7 @@ test("导出模型包含必需 sheets、状态/来源/共享责任与可解析�
   });
   assert.deepEqual(model.sheets.map(sheet => sheet.name), [
     "报价 Quotation", "费率 Premium", "保险责任TOB", "昂贵医院 List of HCPs",
-    "预授权 Pre-auth", "重大既往症 Catastrophic PEC", "参保条件 Eligibility",
+    "受限医院 Restricted Providers", "预授权 Pre-auth", "重大既往症 Catastrophic PEC", "参保条件 Eligibility",
   ]);
   assert.ok(model.sheets.find(sheet => sheet.name === "费率 Premium").rows.flat().some(value => String(value).includes("待人工费率")));
   const tob = model.sheets.find(sheet => sheet.name === "保险责任TOB");
@@ -373,7 +373,7 @@ test("报价导出按实际内容收口，并保留 Proposal 模板的分区宽�
   assert.ok(tob.merges.some(ref => ref === "A4:B4"));
   assert.ok(tob.merges.some(ref => ref === "C4:D4"));
   assert.ok(tob.merges.some(ref => ref === "E4:F4"));
-  const frozenNames = ["昂贵医院 List of HCPs", "预授权 Pre-auth", "重大既往症 Catastrophic PEC", "参保条件 Eligibility"];
+  const frozenNames = ["昂贵医院 List of HCPs", "受限医院 Restricted Providers", "预授权 Pre-auth", "重大既往症 Catastrophic PEC", "参保条件 Eligibility"];
   assert.equal(model.sheets.filter(sheet => frozenNames.includes(sheet.name)).every(sheet => sheet.frozenTemplate === true), true);
 
   assert.equal(core.proposalPlanCode("P3WWE"), "P301");

@@ -15,9 +15,10 @@ const templatePath = "/Users/doristao/Documents/PP SME/PP SME  Proposal 模板.x
 const embeddedSource = readFileSync(join(here, "../proposal-template-static.js"), "utf8");
 const embeddedTemplate = embeddedSource.match(/BASE64 = "([^"]+)"/)[1];
 
-test("四张固定 Proposal 页只标记为模板锁定页，不再由报价模型重绘", () => {
+test("五张固定 Proposal 页只标记为模板锁定页，不再由报价模型重绘", () => {
   const frozenNames = [
     "昂贵医院 List of HCPs",
+    "受限医院 Restricted Providers",
     "预授权 Pre-auth",
     "重大既往症 Catastrophic PEC",
     "参保条件 Eligibility",
@@ -27,13 +28,29 @@ test("四张固定 Proposal 页只标记为模板锁定页，不再由报价模�
   assert.equal(sheets.slice(3).every(sheet => sheet.frozenTemplate === true), true);
 });
 
-test("锁定导出保留四张模板页的原始 XML", async () => {
-  const templateBytes = readFileSync(templatePath);
+test("锁定导出保留五张模板页的原始 XML", async () => {
+  const templateBytes = Buffer.from(embeddedTemplate, "base64");
   const lockedBytes = await lockToProposalTemplate(templateBytes, { JSZip, templateBase64: embeddedTemplate });
   const [sourceZip, lockedZip] = await Promise.all([JSZip.loadAsync(templateBytes), JSZip.loadAsync(lockedBytes)]);
   for (const path of FROZEN_SHEET_PATHS) {
     assert.equal(await lockedZip.file(path).async("string"), await sourceZip.file(path).async("string"), `${path} must remain byte-for-byte identical`);
   }
+});
+
+test("新页位于昂贵医院之后，原有四张固定页的 XML 完全不变", async () => {
+  const [original, approved] = await Promise.all([
+    JSZip.loadAsync(readFileSync(templatePath)),
+    JSZip.loadAsync(Buffer.from(embeddedTemplate, "base64")),
+  ]);
+  for (let index = 4; index <= 7; index += 1) {
+    const path = `xl/worksheets/sheet${index}.xml`;
+    assert.equal(await approved.file(path).async("string"), await original.file(path).async("string"));
+  }
+  const workbook = XLSX.read(Buffer.from(embeddedTemplate, "base64"), { type: "buffer" });
+  assert.equal(workbook.SheetNames[4], "受限医院 Restricted Providers");
+  assert.equal(workbook.SheetNames[3], "昂贵医院 List of HCPs");
+  assert.equal(workbook.Sheets[workbook.SheetNames[4]].A48?.v, 39);
+  assert.match(workbook.Sheets[workbook.SheetNames[4]].B48?.v, /Shanghai WA Optimum Health Care/);
 });
 
 test("锁定导出兼容动态工作簿缺少 sharedStrings.xml 的正常场景", async () => {
@@ -46,7 +63,7 @@ test("锁定导出兼容动态工作簿缺少 sharedStrings.xml 的正常场景"
   assert.equal(generatedZip.file("xl/sharedStrings.xml"), null, "回归场景应保持 SheetJS 的无 sharedStrings 输出");
 
   const lockedBytes = await lockToProposalTemplate(generatedBytes, { JSZip, templateBase64: embeddedTemplate });
-  const [sourceZip, lockedZip] = await Promise.all([JSZip.loadAsync(readFileSync(templatePath)), JSZip.loadAsync(lockedBytes)]);
+  const [sourceZip, lockedZip] = await Promise.all([JSZip.loadAsync(Buffer.from(embeddedTemplate, "base64")), JSZip.loadAsync(lockedBytes)]);
   assert.match(await lockedZip.file("xl/worksheets/sheet1.xml").async("string"), /报价 动态内容/);
   for (const path of FROZEN_SHEET_PATHS) {
     assert.equal(await lockedZip.file(path).async("string"), await sourceZip.file(path).async("string"), `${path} must remain byte-for-byte identical`);

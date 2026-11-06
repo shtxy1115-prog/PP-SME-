@@ -1154,6 +1154,7 @@
       buildPremiumSheetProposalLayout(state, variants),
       buildCombinedTobSheet(state, variants),
       frozenTemplateSheet("昂贵医院 List of HCPs"),
+      frozenTemplateSheet("受限医院 Restricted Providers"),
       frozenTemplateSheet("预授权 Pre-auth"),
       frozenTemplateSheet("重大既往症 Catastrophic PEC"),
       frozenTemplateSheet("参保条件 Eligibility"),

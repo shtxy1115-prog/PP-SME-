@@ -1,6 +1,7 @@
 .DS_Store
 node_modules/
 *.xlsx
+!quote-tool/outputs/受限医院列表_版式预览_待确认.xlsx
 *.xls
 *.xlsm
 *.tmp
