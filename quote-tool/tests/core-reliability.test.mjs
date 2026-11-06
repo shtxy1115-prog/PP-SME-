@@ -28,6 +28,14 @@ const variant = (id, planCode, extra = {}) => ({
   ...extra,
 });
 
+test("新版可选福利调整后费率用于所有适用计划", () => {
+  for (const plan of core.PLANS) {
+    for (const [type, code, price] of [["wellness", "w1500", 1200], ["wellness", "w3000", 2400], ["dental", "d2000", 1500], ["vision", "v1000", 850]]) {
+      assert.equal(core.getOptional(type, code).premiumByPlan[plan.code], price);
+    }
+  }
+});
+
 test("自付比例源值和正式输出均使用百分比，而不是裸 0/1", () => {
   const item = core.BENEFIT_DATA.find(benefit => benefit.benefitId === "POLICY_COPAY");
   for (const plan of core.PLANS) assert.equal(item.planValues[plan.code], "0%");
@@ -414,7 +422,7 @@ test("Quotation 逐方案分列，仅显示已选择的可选福利保费", () =
   const optionalRows = selected.rows.filter(row => /可选(?:生育|体检|牙科|眼科)福利保费/.test(String(row[0])));
   assert.deepEqual(optionalRows.map(row => row[0]), ["可选体检福利保费\nOptional Wellness Benefits Premium"]);
   assert.equal(optionalRows[0][1], "");
-  assert.equal(optionalRows[0][2], 2472);
+  assert.equal(optionalRows[0][2], 2400);
 
   const detailHeaderIndex = selected.rows.findIndex(row => row[0] === "人员 / Member");
   const detailHeader = selected.rows[detailHeaderIndex];
@@ -426,7 +434,7 @@ test("Quotation 逐方案分列，仅显示已选择的可选福利保费", () =
   ]);
   assert.equal(typeof detailValues[3], "number");
   assert.equal(typeof detailValues[4], "number");
-  assert.equal(detailValues[5], 2472);
+  assert.equal(detailValues[5], 2400);
   assert.equal(selected.rowStyles[optionalRows[0] ? selected.rows.indexOf(optionalRows[0]) : -1], "meta");
 });
 
@@ -462,7 +470,7 @@ test("Premium 按实际已选可选福利展示相应计划费率；未选择时
   assert.match(premium.rows[optionalTitle + 2][0], /牙科福利[\s\S]*方案 1 · P201/);
   assert.deepEqual(premium.rows[optionalTitle + 2].slice(1), ["5,000元 / CNY5,000", 3408]);
   assert.match(premium.rows[optionalTitle + 3][0], /体检福利[\s\S]*方案 2 · P402/);
-  assert.deepEqual(premium.rows[optionalTitle + 3].slice(1), ["3,000元 / CNY3,000", 2472]);
+  assert.deepEqual(premium.rows[optionalTitle + 3].slice(1), ["3,000元 / CNY3,000", 2400]);
   assert.equal(premium.rows.slice(optionalTitle + 2).some(row => /Maternity|生育福利/.test(String(row[0]))), false);
   assert.deepEqual(premium.merges, ["A1:C1", `A${optionalTitle + 1}:C${optionalTitle + 1}`]);
 });

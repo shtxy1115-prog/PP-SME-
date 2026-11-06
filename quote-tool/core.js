@@ -249,20 +249,20 @@
     ],
     wellness: [
       { code: "none", label: "不选体检/疫苗 / No wellness", premiumByPlan: planPremiumMap({}) },
-      { code: "w1500", label: "体检及疫苗 1,500元 / Wellness CNY 1,500", allowedGroups: ["P1", "P2", "P3", "P4"], premiumByPlan: planPremiumMap({ P101: 1332, P102: 1332, P103: 1332, P201: 1332, P202: 1332, P203: 1332, P3WWE: 1332, P4WWE: 1332, P4WW: 1332 }) },
-      { code: "w3000", label: "体检及疫苗 3,000元 / Wellness CNY 3,000", allowedGroups: ["P1", "P2", "P3", "P4"], premiumByPlan: planPremiumMap({ P101: 2472, P102: 2472, P103: 2472, P201: 2472, P202: 2472, P203: 2472, P3WWE: 2472, P4WWE: 2472, P4WW: 2472 }) },
+      { code: "w1500", label: "体检及疫苗 1,500元 / Wellness CNY 1,500", allowedGroups: ["P1", "P2", "P3", "P4"], premiumByPlan: planPremiumMap({ P101: 1200, P102: 1200, P103: 1200, P201: 1200, P202: 1200, P203: 1200, P3WWE: 1200, P4WWE: 1200, P4WW: 1200 }) },
+      { code: "w3000", label: "体检及疫苗 3,000元 / Wellness CNY 3,000", allowedGroups: ["P1", "P2", "P3", "P4"], premiumByPlan: planPremiumMap({ P101: 2400, P102: 2400, P103: 2400, P201: 2400, P202: 2400, P203: 2400, P3WWE: 2400, P4WWE: 2400, P4WW: 2400 }) },
       { code: "w5000", label: "体检及疫苗 5,000元 / Wellness CNY 5,000", allowedGroups: ["P3", "P4"], premiumByPlan: planPremiumMap({ P3WWE: 3672, P4WWE: 3672, P4WW: 3672 }) },
     ],
     dental: [
       { code: "none", label: "不选牙科 / No dental", premiumByPlan: planPremiumMap({}) },
-      { code: "d2000", label: "牙科 2,000元 / Dental CNY 2,000", allowedGroups: ["P1", "P2", "P3", "P4"], premiumByPlan: planPremiumMap({ P101: 1920, P102: 1920, P103: 1920, P201: 1920, P202: 1920, P203: 1920, P3WWE: 1920, P4WWE: 1920, P4WW: 1920 }) },
+      { code: "d2000", label: "牙科 2,000元 / Dental CNY 2,000", allowedGroups: ["P1", "P2", "P3", "P4"], premiumByPlan: planPremiumMap({ P101: 1500, P102: 1500, P103: 1500, P201: 1500, P202: 1500, P203: 1500, P3WWE: 1500, P4WWE: 1500, P4WW: 1500 }) },
       { code: "d5000", label: "牙科 5,000元 / Dental CNY 5,000", allowedGroups: ["P1", "P2", "P3", "P4"], premiumByPlan: planPremiumMap({ P101: 3408, P102: 3408, P103: 3408, P201: 3408, P202: 3408, P203: 3408, P3WWE: 3408, P4WWE: 3408, P4WW: 3408 }) },
       { code: "d10000", label: "牙科 10,000元（含正畸） / Dental CNY 10,000 incl. orthodontics", allowedGroups: ["P3", "P4"], premiumByPlan: planPremiumMap({ P3WWE: 6036, P4WWE: 6036, P4WW: 6036 }) },
       { code: "d10000no", label: "牙科 10,000元（不含正畸） / Dental CNY 10,000 excl. orthodontics", allowedGroups: ["P3", "P4"], premiumByPlan: planPremiumMap({ P3WWE: 4080, P4WWE: 4080, P4WW: 4080 }) },
     ],
     vision: [
       { code: "none", label: "不选眼科 / No vision", premiumByPlan: planPremiumMap({}) },
-      { code: "v1000", label: "眼科 1,000元 / Vision CNY 1,000", allowedGroups: ["P1", "P2", "P3", "P4"], premiumByPlan: planPremiumMap({ P101: 960, P102: 960, P103: 960, P201: 960, P202: 960, P203: 960, P3WWE: 960, P4WWE: 960, P4WW: 960 }) },
+      { code: "v1000", label: "眼科 1,000元 / Vision CNY 1,000", allowedGroups: ["P1", "P2", "P3", "P4"], premiumByPlan: planPremiumMap({ P101: 850, P102: 850, P103: 850, P201: 850, P202: 850, P203: 850, P3WWE: 850, P4WWE: 850, P4WW: 850 }) },
     ],
   });
 
