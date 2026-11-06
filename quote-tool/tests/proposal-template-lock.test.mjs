@@ -37,12 +37,12 @@ test("锁定导出保留五张模板页的原始 XML", async () => {
   }
 });
 
-test("新页位于昂贵医院之后，原有四张固定页的 XML 完全不变", async () => {
+test("新页位于昂贵医院之后，未修订的固定页 XML 不变", async () => {
   const [original, approved] = await Promise.all([
     JSZip.loadAsync(readFileSync(templatePath)),
     JSZip.loadAsync(Buffer.from(embeddedTemplate, "base64")),
   ]);
-  for (let index = 4; index <= 7; index += 1) {
+  for (let index = 4; index <= 6; index += 1) {
     const path = `xl/worksheets/sheet${index}.xml`;
     assert.equal(await approved.file(path).async("string"), await original.file(path).async("string"));
   }
@@ -54,13 +54,16 @@ test("新页位于昂贵医院之后，原有四张固定页的 XML 完全不变
 });
 
 test("参保条件固定页使用 5 人分界及 3 至 50 人范围", () => {
-  const workbook = XLSX.read(Buffer.from(embeddedTemplate, "base64"), { type: "buffer" });
+  const workbook = XLSX.read(Buffer.from(embeddedTemplate, "base64"), { type: "buffer", cellStyles: true });
   const eligibility = workbook.Sheets["参保条件 Eligibility"];
   assert.match(eligibility.B19.v, /3 to 50 insured persons/);
   assert.match(eligibility.B28.v, /≥5人/);
   assert.match(eligibility.B29.v, /fewer than 5 employees/);
   assert.match(eligibility.B31.v, /fewer than 5 employees/);
   assert.doesNotMatch([eligibility.B28.v, eligibility.B29.v, eligibility.B31.v].join("\n"), /11 employees|11EE/);
+  for (const address of ["B19", "B27", "B28", "B29", "B30", "B31"]) {
+    assert.equal(eligibility[address].s, eligibility.B17.s, `${address} must match surrounding body typography`);
+  }
 });
 
 test("锁定导出兼容动态工作簿缺少 sharedStrings.xml 的正常场景", async () => {
