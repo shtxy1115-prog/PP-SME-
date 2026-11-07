@@ -244,7 +244,7 @@
         appendText(assignment, "option", "请选择方案").value = "";
         quoteVariants.forEach(variant => {
           const plan = core.getPlan(variant.planCode);
-          const option = appendText(assignment, "option", `${plan.code} · ${variant.name}`);
+          const option = appendText(assignment, "option", `${core.proposalPlanCode(plan)} · ${variant.name}`);
           option.value = variant.id;
           option.selected = core.variantForPerson(person, state) === variant.id;
         });
@@ -271,7 +271,7 @@
       checkbox.value = plan.code;
       checkbox.checked = selectedPlanCodes.includes(plan.code);
       const text = document.createElement("span");
-      appendText(text, "strong", `${plan.code} · ${plan.name}${plan.option ? ` ${plan.option}` : ""}`);
+      appendText(text, "strong", `${core.proposalPlanLabel(plan)}`);
       appendText(text, "small", `${plan.area} · 费率列 ${plan.rateColumn}`);
       label.append(checkbox, text);
       checkbox.addEventListener("change", event => {
@@ -345,7 +345,7 @@
       selectedVariantsForPlan(plan.code).forEach(variant => {
         const panel = document.createElement("div");
         panel.className = "option-panel benefit-panel";
-        appendText(panel, "h3", `${plan.code} · ${variant.name}`);
+        appendText(panel, "h3", `${core.proposalPlanCode(plan)} · ${variant.name}`);
         const nameLabel = document.createElement("label");
         nameLabel.className = "option-row field";
         appendText(nameLabel, "span", "报价方案名称");

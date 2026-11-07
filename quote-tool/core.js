@@ -55,15 +55,15 @@
   });
 
   const PLANS = Object.freeze([
-    { code: "P101", group: "P1", name: "大陆计划", option: "选项一", area: "中国大陆", region: "MAINLAND", rateColumn: "P1O1", outpatientMaximum: "30,000元/人/年", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P1O1" } },
-    { code: "P102", group: "P1", name: "大陆计划", option: "选项二", area: "中国大陆", region: "MAINLAND", rateColumn: "P1O2", outpatientMaximum: "50,000元/人/年", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P1O2" } },
-    { code: "P103", group: "P1", name: "大陆计划", option: "选项三", area: "中国大陆", region: "MAINLAND", rateColumn: "P1O3", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P1O3" } },
-    { code: "P201", group: "P2", name: "大中华计划", option: "选项一", area: "中国大陆、港澳台", region: "GREATER_CHINA", rateColumn: "P2O1", outpatientMaximum: "50,000元/人/年", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P2O1" } },
-    { code: "P202", group: "P2", name: "大中华计划", option: "选项二", area: "中国大陆、港澳台", region: "GREATER_CHINA", rateColumn: "P2O2", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P2O2" } },
-    { code: "P203", group: "P2", name: "大中华计划", option: "选项三", area: "中国大陆、港澳台", region: "GREATER_CHINA", rateColumn: "P2O3", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P2O3" } },
-    { code: "P3WWE", group: "P3", name: "全球除美计划", option: "", area: "全球除美国", region: "WORLDWIDE_EXCLUDING_US", rateColumn: "P3WWE", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P3WWE" } },
-    { code: "P4WWE", group: "P4", name: "全球计划", option: "", area: "全球除美国", region: "WORLDWIDE_EXCLUDING_US", rateColumn: "P4WWE", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P4WWE" } },
-    { code: "P4WW", group: "P4", name: "全球计划", option: "", area: "全球", region: "WORLDWIDE", rateColumn: "P4WW", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P4WW" } },
+    { code: "P101", group: "P1", name: "中国大陆-门诊3万", option: "", area: "中国大陆", region: "MAINLAND", rateColumn: "P1O1", outpatientMaximum: "30,000元/人/年", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P1O1" } },
+    { code: "P102", group: "P1", name: "中国大陆-门诊5万", option: "", area: "中国大陆", region: "MAINLAND", rateColumn: "P1O2", outpatientMaximum: "50,000元/人/年", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P1O2" } },
+    { code: "P103", group: "P1", name: "中国大陆-门诊无限额", option: "", area: "中国大陆", region: "MAINLAND", rateColumn: "P1O3", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P1O3" } },
+    { code: "P201", group: "P2", name: "大中华-无昂贵，门诊5万", option: "", area: "中国大陆、港澳台", region: "GREATER_CHINA", rateColumn: "P2O1", outpatientMaximum: "50,000元/人/年", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P2O1" } },
+    { code: "P202", group: "P2", name: "大中华-无昂贵，门诊无限额", option: "", area: "中国大陆、港澳台", region: "GREATER_CHINA", rateColumn: "P2O2", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P2O2" } },
+    { code: "P203", group: "P2", name: "大中华-含昂贵，门诊无限额", option: "", area: "中国大陆、港澳台", region: "GREATER_CHINA", rateColumn: "P2O3", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P2O3" } },
+    { code: "P3WWE", group: "P3", name: "全球除美-20% 昂贵自付", option: "", area: "全球除美国", region: "WORLDWIDE_EXCLUDING_US", rateColumn: "P3WWE", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P3WWE" } },
+    { code: "P4WWE", group: "P4", name: "全球除美-含昂贵", option: "", area: "全球除美国", region: "WORLDWIDE_EXCLUDING_US", rateColumn: "P4WWE", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P4WWE" } },
+    { code: "P4WW", group: "P4", name: "全球-含昂贵", option: "", area: "全球", region: "WORLDWIDE", rateColumn: "P4WW", outpatientMaximum: "赔付至年度最高保额", source: { sheet: SOURCE_SHEET_RATES, row: 9, column: "P4WW" } },
   ]);
 
   const PLAN_BY_CODE = new Map(PLANS.map(plan => [plan.code, plan]));

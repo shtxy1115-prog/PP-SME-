@@ -480,7 +480,7 @@ test("Premium 按实际已选可选福利展示相应计划费率；未选择时
   const premium = model.sheets.find(sheet => sheet.name === "费率 Premium");
   assert.deepEqual(premium.widths, [34, 50.796875, 50.796875]);
   assert.deepEqual(premium.rows[0], ["费率表 Premium", "", ""]);
-  assert.deepEqual(premium.rows[1], ["计划 / Plan", "P201 · 大中华计划 选项一", "P402 · 全球计划"]);
+  assert.deepEqual(premium.rows[1], ["计划 / Plan", "P201 · 大中华-无昂贵，门诊5万", "P402 · 全球-含昂贵"]);
   assert.deepEqual(premium.rows[5], ["年龄段 / Age Band", "医疗保费/\nMedical Premium", "医疗保费/\nMedical Premium"]);
   assert.deepEqual(premium.rows[6], ["0-7", core.rateFor(0, "P201"), core.rateFor(0, "P4WW")]);
   assert.equal(premium.rows[6].length, 3);
@@ -562,4 +562,24 @@ test("多方案 TOB 按方案列并列展示，不重复垂直方案块", () => 
   assert.equal(coverageArea.length, 6);
   assert.match(coverageArea[2], /中国大陆/);
   assert.match(coverageArea[4], /全球/);
+});
+
+test("新版九个方案名称及昂贵医院责任映射一致", () => {
+  const expected = [
+    ["P101", "中国大陆-门诊3万", "100%"], ["P102", "中国大陆-门诊5万", "100%"],
+    ["P103", "中国大陆-门诊无限额", "100%"], ["P201", "大中华-无昂贵，门诊5万", "100%"],
+    ["P202", "大中华-无昂贵，门诊无限额", "100%"], ["P203", "大中华-含昂贵，门诊无限额", "0%"],
+    ["P3WWE", "全球除美-20% 昂贵自付", "20%"], ["P4WWE", "全球除美-含昂贵", "0%"],
+    ["P4WW", "全球-含昂贵", "0%"],
+  ];
+  assert.equal(core.PLANS.length, 9);
+  for (const [code, name, copay] of expected) {
+    assert.equal(core.getPlan(code).name, name);
+    const model = core.buildWorkbookModel({ mode: "compare", people: [], variants: [variant("v", code)] });
+    for (const sheet of model.sheets.slice(0, 3)) assert.ok(sheet.rows.flat().some(value => String(value).includes(name)));
+    const row = model.sheets[2].rows.find(row => String(row[0]).startsWith("昂贵医疗机构"));
+    assert.equal(row[2], copay);
+  }
+  assert.equal(core.getPlan("P4WWE").rateColumn, "P4WWE");
+  assert.equal(core.getPlan("P4WW").rateColumn, "P4WW");
 });
