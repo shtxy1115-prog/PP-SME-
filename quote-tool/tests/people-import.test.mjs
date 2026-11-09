@@ -38,7 +38,7 @@ test('错误年龄、重复编号和不存在的家属关联均阻止整批导�
 test('多方案不能猜测分配，指定唯一计划可以匹配', () => {
   const variants=[{id:'a',planCode:'P201'},{id:'b',planCode:'P4WW'}];
   assert.ok(importer.parseRows([['姓名','年龄'],['甲',30]],{variants}).errors.length);
-  const result=importer.parseRows([['姓名','年龄','方案'],['甲',30,'P402']],{variants});
+  const result=importer.parseRows([['姓名','年龄','方案'],['甲',30,'P4O2']],{variants});
   assert.equal(result.people[0].assignment,'b');
 });
 test('无编号员工自动连续编号，跳过已有和本批显式编号', () => {

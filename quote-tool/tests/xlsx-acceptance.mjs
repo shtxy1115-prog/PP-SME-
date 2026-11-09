@@ -89,7 +89,7 @@ const fixedCases = [
       const premium = model.sheets.find(sheet => sheet.name === "费率 Premium");
       assert.equal(premium.rows[1].length, 3);
       assert.match(premium.rows[1][1], /P2O1/);
-      assert.match(premium.rows[1][2], /P402/);
+      assert.match(premium.rows[1][2], /P4O2/);
       assert.deepEqual(premium.rows.find(row => String(row[0]).includes("年龄段 / Age Band")), [
         "年龄段 / Age Band",
         "医疗保费/\nMedical Premium",
@@ -106,7 +106,7 @@ const fixedCases = [
       const tobSource = model.sheets.find(sheet => sheet.name === "保险责任TOB");
       assert.deepEqual(tobSource.widths, [34.796875, 48.19921875, 22.796875, 24.796875, 22.796875, 24.796875]);
       assert.match(tobSource.rows[1][2], /P2O1/);
-      assert.match(tobSource.rows[1][4], /P402/);
+      assert.match(tobSource.rows[1][4], /P4O2/);
       const onlineSourceRow = tobSource.rows.findIndex(row => String(row[0]).startsWith("在线问诊\nOnline Consultations"));
       const hospiceSourceRow = tobSource.rows.findIndex(row => String(row[0]).startsWith("临终关怀费\nHospice Care"));
       const homeNursingRow = tobSource.rows.find(row => String(row[0]).startsWith("家庭护理\nHome Nursing"));
@@ -268,7 +268,7 @@ const fixedCases = [
       const tob = model.sheets.find(sheet => sheet.name === "保险责任TOB");
       assert.deepEqual(tob.widths, [34.796875, 48.19921875, 22.796875, 24.796875, 22.796875, 24.796875]);
       assert.match(tob.rows[1][2], /P2O1/);
-      assert.match(tob.rows[1][4], /P402/);
+      assert.match(tob.rows[1][4], /P4O2/);
       assert.equal(tob.rows.filter(row => String(row[0]).includes("方案 2")).length, 0);
       assert.ok(tob.merges.includes("C4:D4"));
       assert.ok(tob.merges.includes("E4:F4"));
@@ -283,7 +283,7 @@ const fixedCases = [
       const rows = XLSX.utils.sheet_to_json(readBack.Sheets[tob.name], { header: 1, raw: false });
       assert.equal(rows[0][0], "保险责任\nTable of Benefits");
       assert.match(rows[1][2], /P2O1/);
-      assert.match(rows[1][4], /P402/);
+      assert.match(rows[1][4], /P4O2/);
       assert.equal(rows.filter(row => String(row[0]).includes("方案 2")).length, 0);
     },
   },

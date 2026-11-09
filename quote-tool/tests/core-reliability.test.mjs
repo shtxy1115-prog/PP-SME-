@@ -372,7 +372,7 @@ test("报价导出按实际内容收口，并保留 Proposal 模板的分区宽�
   assert.equal(quotation.rows.find(row => row[0] === "人员 / Member").length, 5);
   assert.deepEqual(quotation.styledBlankCells, ["D2"]);
   assert.equal(quotation.rows[3][0], "方案 / Quotation Plan");
-  assert.match(quotation.rows[3][1], /方案 1[\s\S]*P2O1[\s\S]*方案 2[\s\S]*P402/);
+  assert.match(quotation.rows[3][1], /方案 1[\s\S]*P2O1[\s\S]*方案 2[\s\S]*P4O2/);
   assert.equal(quotation.rows[3][2], "区域 / Area");
   assert.match(quotation.rows[3][3], /中国大陆、港澳台[\s\S]*全球/);
   assert.equal(quotation.rows[4][0], "方案调整选择\nPlan Change Options");
@@ -396,11 +396,11 @@ test("报价导出按实际内容收口，并保留 Proposal 模板的分区宽�
   const frozenNames = ["昂贵医院 List of HCPs", "受限医院 Restricted Providers", "预授权 Pre-auth", "重大既往症 Catastrophic PEC", "参保条件 Eligibility"];
   assert.equal(model.sheets.filter(sheet => frozenNames.includes(sheet.name)).every(sheet => sheet.frozenTemplate === true), true);
 
-  assert.equal(core.proposalPlanCode("P3WWE"), "P301");
-  assert.equal(core.proposalPlanCode("P4WWE"), "P401");
-  assert.equal(core.proposalPlanCode("P4WW"), "P402");
+  assert.equal(core.proposalPlanCode("P3WWE"), "P3O1");
+  assert.equal(core.proposalPlanCode("P4WWE"), "P4O1");
+  assert.equal(core.proposalPlanCode("P4WW"), "P4O2");
   const proposalText = model.sheets.flatMap(sheet => sheet.rows.flat()).join("\n");
-  assert.match(proposalText, /P402/);
+  assert.match(proposalText, /P4O2/);
   assert.doesNotMatch(proposalText, /P4WW/);
 });
 
@@ -427,7 +427,7 @@ test("Quotation 逐方案分列，仅显示已选择的可选福利保费", () =
     "人员类型 / Type",
     "年龄 / Age",
     "方案 1 · P2O1\n医疗保费 / Medical Premium",
-    "方案 2 · P402\n医疗保费 / Medical Premium",
+    "方案 2 · P4O2\n医疗保费 / Medical Premium",
   ]);
 
   const selected = modelFor([
@@ -449,8 +449,8 @@ test("Quotation 逐方案分列，仅显示已选择的可选福利保费", () =
   const detailValues = selected.rows[detailHeaderIndex + 1];
   assert.deepEqual(detailHeader.slice(3, 6), [
     "方案 1 · P2O1\n医疗保费 / Medical Premium",
-    "方案 2 · P402\n医疗保费 / Medical Premium",
-    "方案 2 · P402\n可选体检福利保费\nOptional Wellness Benefits Premium",
+    "方案 2 · P4O2\n医疗保费 / Medical Premium",
+    "方案 2 · P4O2\n可选体检福利保费\nOptional Wellness Benefits Premium",
   ]);
   assert.equal(typeof detailValues[3], "number");
   assert.equal(typeof detailValues[4], "number");
@@ -480,7 +480,7 @@ test("Premium 按实际已选可选福利展示相应计划费率；未选择时
   const premium = model.sheets.find(sheet => sheet.name === "费率 Premium");
   assert.deepEqual(premium.widths, [34, 50.796875, 50.796875]);
   assert.deepEqual(premium.rows[0], ["费率表 Premium", "", ""]);
-  assert.deepEqual(premium.rows[1], ["计划 / Plan", "P2O1 · 大中华-无昂贵，门诊5万", "P402 · 全球-含昂贵"]);
+  assert.deepEqual(premium.rows[1], ["计划 / Plan", "P2O1 · 大中华-无昂贵，门诊5万", "P4O2 · 全球-含昂贵"]);
   assert.deepEqual(premium.rows[5], ["年龄段 / Age Band", "医疗保费/\nMedical Premium", "医疗保费/\nMedical Premium"]);
   assert.deepEqual(premium.rows[6], ["0-7", core.rateFor(0, "P201"), core.rateFor(0, "P4WW")]);
   assert.equal(premium.rows[6].length, 3);
@@ -489,7 +489,7 @@ test("Premium 按实际已选可选福利展示相应计划费率；未选择时
   assert.deepEqual(premium.rows[optionalTitle + 1], ["保险责任 / Benefits", "额度 / Sum of Assured", "保费 / Premium"]);
   assert.match(premium.rows[optionalTitle + 2][0], /牙科福利[\s\S]*方案 1 · P2O1/);
   assert.deepEqual(premium.rows[optionalTitle + 2].slice(1), ["5,000元 / CNY5,000", 3408]);
-  assert.match(premium.rows[optionalTitle + 3][0], /体检福利[\s\S]*方案 2 · P402/);
+  assert.match(premium.rows[optionalTitle + 3][0], /体检福利[\s\S]*方案 2 · P4O2/);
   assert.deepEqual(premium.rows[optionalTitle + 3].slice(1), ["3,000元 / CNY3,000", 2400]);
   assert.equal(premium.rows.slice(optionalTitle + 2).some(row => /Maternity|生育福利/.test(String(row[0]))), false);
   assert.deepEqual(premium.merges, ["A1:C1", `A${optionalTitle + 1}:C${optionalTitle + 1}`]);
@@ -552,7 +552,7 @@ test("多方案 TOB 按方案列并列展示，不重复垂直方案块", () => 
   assert.deepEqual(tob.widths, [34.796875, 48.19921875, 22.796875, 24.796875, 22.796875, 24.796875]);
   assert.deepEqual(tob.rows[0], ["保险责任\nTable of Benefits", "", "", "", "", ""]);
   assert.match(tob.rows[1][2], /P2O1/);
-  assert.match(tob.rows[1][4], /P402/);
+  assert.match(tob.rows[1][4], /P4O2/);
   assert.equal(tob.rows.every(row => row.length <= 6), true);
   assert.equal(tob.rows.filter(row => String(row[0]).includes("方案 2")).length, 0);
   assert.equal(tob.rows.filter(row => row[0] === "福利责任 Benefit").length, 1);

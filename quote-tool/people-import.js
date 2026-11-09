@@ -41,7 +41,7 @@
     }).map(row=>columns.employeeId===undefined?'':clean(row[columns.employeeId])).filter(Boolean));
     let nextNumber=Number(nextEmployeeId(existingEmployees).slice(1));
     const existingNames=new Set((options.existingPeople || []).map(p=>`${p.name}|${p.dob || p.age}|${p.type}`));
-    const aliases={P301:'P3WWE',P401:'P4WWE',P402:'P4WW'};
+    const aliases={P3O1:'P3WWE',P4O1:'P4WWE',P4O2:'P4WW',P301:'P3WWE',P401:'P4WWE',P402:'P4WW'};
     rows.slice(headerIndex+1).forEach((row,index)=>{
       if(!row.some(value=>clean(value))) return;
       const line=headerIndex+index+2;
