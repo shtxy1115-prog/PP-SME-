@@ -345,7 +345,7 @@ test("导出模型包含必需 sheets、状态/来源/共享责任与可解析�
   assert.ok(model.sheets.find(sheet => sheet.name === "费率 Premium").rows.flat().some(value => String(value).includes("待人工费率")));
   const tob = model.sheets.find(sheet => sheet.name === "保险责任TOB");
   assert.ok(tob.rows.flat().some(value => String(value).includes("理疗费")));
-  assert.equal(model.metadata.sourceWorkbook, "PP & Prosper SME 方案整理表 20260814 v2.xlsx");
+  assert.equal(model.metadata.sourceWorkbook, "PP & Prosper SME 方案整理表 20261112.xlsx");
 });
 
 test("报价导出按实际内容收口，并保留 Proposal 模板的分区宽度", () => {

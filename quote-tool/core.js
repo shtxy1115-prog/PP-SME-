@@ -9,7 +9,7 @@
 }(typeof globalThis !== "undefined" ? globalThis : this, function createQuoteCore() {
   "use strict";
 
-  const SOURCE_WORKBOOK = "PP & Prosper SME 方案整理表 20260814 v2.xlsx";
+  const SOURCE_WORKBOOK = "PP & Prosper SME 方案整理表 20261112.xlsx";
   const SOURCE_SHEET_BENEFITS = "福利表";
   const SOURCE_SHEET_RATES = "Quotation";
   const QUOTE_STATUSES = Object.freeze({
