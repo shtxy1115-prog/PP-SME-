@@ -667,7 +667,7 @@
     return getPreExisting(variant?.preExisting || "standard") || PRE_EXISTING_OPTIONS[0];
   }
 
-  const PROPOSAL_PLAN_CODES = Object.freeze({ P101: "P1O1", P102: "P1O2", P103: "P1O3", P201: "P2O1", P202: "P2O2", P203: "P2O3", P3WWE: "P3O1", P4WWE: "P4O1", P4WW: "P4O2" });
+  const PROPOSAL_PLAN_CODES = Object.freeze({ P101: "P1O1", P102: "P1O2", P103: "P1O3", P201: "P2O1", P202: "P2O2", P203: "P2O3", P3WWE: "P3O1", P4WWE: "P4O2", P4WW: "P4O1" });
   const PCP_DIRECT_BILLING_EN = "Direct billing is available following an initial consultation with a Prosper PCP; emergency treatment is exempt from this requirement.";
 
   function proposalPlanCode(planOrCode) {
