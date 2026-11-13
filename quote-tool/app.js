@@ -749,7 +749,7 @@
       font("OPPOSans R", 11, true, WORKBOOK_COLORS.totalInk),
       font("OPPOSans R", 10, true, WORKBOOK_COLORS.discountInk),
       font("OPPOSans R", 11, true, WORKBOOK_COLORS.blue),
-      font("OPPOSans R", 11, true, WORKBOOK_COLORS.ink),
+      font("OPPOSans R", 11, false, WORKBOOK_COLORS.ink),
       font("OPPOSans R", 11, false, WORKBOOK_COLORS.ink),
     ].join("");
     const fills = ["none", "gray125", WORKBOOK_COLORS.navy, WORKBOOK_COLORS.header, WORKBOOK_COLORS.section, WORKBOOK_COLORS.soft, WORKBOOK_COLORS.total, WORKBOOK_COLORS.discount, WORKBOOK_COLORS.white].map(fill).join("");
