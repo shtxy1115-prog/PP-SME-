@@ -719,7 +719,7 @@
     return detail.pending ? "单独核保 / 待人工费率" : detail.value;
   }
 
-  function tobCoverage(item, variant) {
+  function tobCoverage(item, variant, state = {}) {
     const plan = getPlan(variant?.planCode);
     const selected = isOptionalSelected(variant, item);
     let coverage = selected || !["maternity", "wellness", "dental", "vision"].includes(item.section)
@@ -745,6 +745,14 @@
     }
     if (item.benefitId === "POLICY_COPAY") coverage = selectedCopay(variant).coverage;
     if (item.benefitId === "NON_CATASTROPHIC_PEC" && variant.preExisting === "fmu") coverage = selectedPreExisting(variant).description;
+    if (item.benefitId === "EMERGENCY_TREATMENT" && plan?.code === "P4WWE") coverage = "涵盖\nCovered";
+    if (item.benefitId === "NON_CATASTROPHIC_PEC" && variant.preExisting !== "fmu") {
+      const employees = (state.people || []).filter(person => person.type === "employee").length;
+      coverage = employees >= 5 ? "员工≥5人：一般既往症无单项限额\nGeneral pre-existing conditions covered without a specific sub-limit" : "员工少于5人：一般既往症限额10,000元/人/年\nCNY 10,000 per insured person per year";
+    }
+    if (selected && ["ROUTINE_EXAMS", "IMMUNIZATIONS", "ROUTINE_DENTAL"].includes(item.benefitId)) coverage = PREMIUM_DISPLAY_SUM_ASSURED[variant[item.section]] || coverage;
+    if (selected && item.section === "dental" && /^(?:0|1|0\.\d+)$/.test(String(coverage))) coverage = `${Number(coverage) * 100}%`;
+    if (selected && item.benefitId === "DENTAL_ORTHODONTIC" && variant.dental === "d10000") coverage = "50%";
     return coverage;
   }
 
@@ -778,7 +786,7 @@
       const benefitRow = rows.length + 1;
       const sharedGroup = displayRow.item?.sharedGroup === "THERAPY_TCM_HERBAL";
       const previousShared = displayRows[displayIndex - 1]?.item?.sharedGroup === "THERAPY_TCM_HERBAL";
-      const coverage = displayRow.item && (!sharedGroup || !previousShared) ? tobCoverage(displayRow.item, variant) : "";
+      const coverage = displayRow.item && (!sharedGroup || !previousShared) ? tobCoverage(displayRow.item, variant, state) : "";
       rows.push([displayRow.text, "", coverage, "", ""]);
       rowStyles.push(displayRow.labelStyle === "section" ? "benefitHeading" : "body");
       merges.push(`A${benefitRow}:B${benefitRow}`);
@@ -854,7 +862,7 @@
         ...variants.flatMap(variant => {
           const sharedGroup = displayRow.item?.sharedGroup === "THERAPY_TCM_HERBAL";
           const previousShared = displayRows[displayIndex - 1]?.item?.sharedGroup === "THERAPY_TCM_HERBAL";
-          return [displayRow.item && (!sharedGroup || !previousShared) ? tobCoverage(displayRow.item, variant) : "", ""];
+          return [displayRow.item && (!sharedGroup || !previousShared) ? tobCoverage(displayRow.item, variant, state) : "", ""];
         }),
       ]);
       rowStyles.push(displayRow.labelStyle === "section" ? "benefitHeading" : "body");
@@ -920,9 +928,10 @@
     const optionalTypes = Object.keys(OPTIONAL_SECTION_TYPES).filter(type =>
       variants.some(variant => (variant?.[type] || "none") !== "none"),
     );
+    const commonOptional = type => variants.length > 1 && variants.every(v => (v[type] || "none") === (variants[0][type] || "none") && optionalPremiumCell(v, v.planCode, type) === optionalPremiumCell(variants[0], variants[0].planCode, type));
     const detailColumns = variants.flatMap((variant, variantIndex) => [
       { variant, variantIndex, type: "medical" },
-      ...optionalTypes.filter(type => (variant?.[type] || "none") !== "none")
+      ...optionalTypes.filter(type => (variant?.[type] || "none") !== "none" && (!commonOptional(type) || variantIndex === 0))
         .map(type => ({ variant, variantIndex, type })),
     ]);
     const columnCount = Math.max(4, 3 + detailColumns.length);
@@ -962,14 +971,19 @@
     merges.push(`A${summaryTitleRow}:${summaryLastColumn}${summaryTitleRow}`);
     pushRow(["保费项目 / Premium Item", ...displayPlanHeaders], "header");
     const pushPremiumRow = (label, getter, style = "meta") => {
-      const values = variants.length ? variants.map(getter) : ["—"];
+      let values = variants.length ? variants.map(getter) : ["—"];
+      const sharedType = optionalTypes.find(type => label.startsWith(optionalLabels[type]));
+      if (sharedType && commonOptional(sharedType) && values.every(value => value === values[0])) {
+        merges.push(`B${rows.length + 1}:${columnName(variants.length)}${rows.length + 1}`);
+        values = [values[0], ...values.slice(1).map(() => "")];
+      }
       pushRow([label, ...values], style);
     };
     pushPremiumRow("医疗保费 / Medical Premium", variant => {
       const totals = totalsFor(variant);
       return totals.baseMedical - totals.discount;
     });
-    optionalTypes.forEach(type => pushPremiumRow(optionalLabels[type], variant => {
+    optionalTypes.forEach(type => pushPremiumRow(`${optionalLabels[type]}\n${[...new Set(variants.map(v => PREMIUM_DISPLAY_SUM_ASSURED[v[type]]).filter(Boolean))].join(" / ")}`, variant => {
       if ((variant?.[type] || "none") === "none") return "";
       const detail = optionalPremiumDetail(variant, variant.planCode, type);
       return detail.pending ? "单独核保 / 待人工费率" : totalsOptional(variant)[type];
@@ -988,11 +1002,14 @@
       const planLabel = `方案 ${variantIndex + 1} · ${proposalPlanCode(plan)}`;
       return type === "medical"
         ? `${planLabel}\n医疗保费 / Medical Premium`
-        : `${planLabel}\n${optionalLabels[type]}`;
+        : `${commonOptional(type) ? "各方案共用" : planLabel}\n${optionalLabels[type]}`;
     });
     pushRow(["人员 / Member", "人员类型 / Type", "年龄 / Age", ...detailHeaders], "header");
     people.forEach((person, personIndex) => {
-      const values = detailColumns.map(({ variant, type }) => {
+      const values = detailColumns.map(({ variant: initialVariant, type }) => {
+        const variant = type !== "medical" && commonOptional(type)
+          ? variants.find(v => membersForVariant(state, v).includes(person)) || initialVariant
+          : initialVariant;
         if (!membersForVariant(state, variant).includes(person)) return "";
         const plan = getPlan(variant.planCode);
         const breakdown = premiumBreakdown(person, variant, state);
@@ -1052,7 +1069,15 @@
         ]);
       });
     });
-    return catalog;
+    return catalog.filter((row, index, all) => {
+      const key = row[0].split("\n")[0];
+      const same = all.filter(other => other[0].split("\n")[0] === key && other[1] === row[1] && other[2] === row[2]);
+      if (same.length > 1) {
+        if (same[0] !== row) return false;
+        row[0] = key;
+      }
+      return true;
+    });
   }
 
   function buildPremiumSheetProposalLayout(state, variants) {

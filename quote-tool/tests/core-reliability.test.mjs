@@ -440,7 +440,7 @@ test("Quotation 逐方案分列，仅显示已选择的可选福利保费", () =
   assert.notEqual(medical[1], medical[2]);
   assert.doesNotMatch(String(medical[1]), /方案 1|方案 2/);
   const optionalRows = selected.rows.filter(row => /可选(?:生育|体检|牙科|眼科)福利保费/.test(String(row[0])));
-  assert.deepEqual(optionalRows.map(row => row[0]), ["可选体检福利保费\nOptional Wellness Benefits Premium"]);
+  assert.deepEqual(optionalRows.map(row => row[0]), ["可选体检福利保费\nOptional Wellness Benefits Premium\n3,000元 / CNY3,000"]);
   assert.equal(optionalRows[0][1], "");
   assert.equal(optionalRows[0][2], 2400);
 
@@ -592,4 +592,28 @@ test("用户最终确认 Plan 4 编号：O1 全球，O2 全球除美，全球费
   for (const band of core.RATE_BANDS) {
     if (typeof band.rates?.P4WW === "number") assert.ok(band.rates.P4WW > band.rates.P4WWE);
   }
+});
+
+test("重复可选福利只展示一次，TOB 按所选档位和实际员工人数输出", () => {
+  const variants = [variant("a", "P4WW", { wellness: "w3000", dental: "d10000" }), variant("b", "P4WWE", { wellness: "w3000", dental: "d10000" })];
+  const state = { mode: "compare", people: Array.from({length: 5}, (_, i) => employee(`E${i}`,30)), variants };
+  const model = core.buildWorkbookModel(state);
+  const quotation = model.sheets[0];
+  const headers = quotation.rows.find(row => row[0] === "人员 / Member");
+  assert.equal(headers.filter(value => String(value).includes("Optional Wellness")).length, 1);
+  assert.equal(headers.filter(value => String(value).includes("Optional Dental")).length, 1);
+  assert.ok(quotation.rows.some(row => String(row[0]).includes("3,000元")));
+  const premium = model.sheets[1];
+  assert.equal(premium.rows.filter(row => String(row[0]).includes("牙科福利")).length, 1);
+  const tob = model.sheets[2];
+  const find = label => tob.rows.find(row => String(row[0]).startsWith(label));
+  assert.equal(find("紧急医疗")[4], "涵盖\nCovered");
+  assert.match(find("一般既往症")[2], /无单项限额/);
+  assert.doesNotMatch(find("一般既往症")[2], /10,000/);
+  assert.equal(find("每年一次全身体检费")[2], "3,000元 / CNY3,000");
+  assert.equal(find("常规牙科保障")[2], "10,000元 / CNY10,000");
+  assert.equal(find("预防治疗费")[2], "100%");
+  assert.equal(find("基础治疗费")[2], "80%");
+  assert.equal(find("重大治疗费")[2], "50%");
+  assert.equal(find("牙齿矫正")[2], "50%");
 });

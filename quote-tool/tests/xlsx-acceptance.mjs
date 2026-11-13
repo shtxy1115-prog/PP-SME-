@@ -80,7 +80,7 @@ const fixedCases = [
         "可选体检福利保费\nOptional Wellness Benefits Premium",
         "可选牙科福利保费\nOptional Dental Benefits Premium",
       ]) {
-        const optionalRow = quotation.rows.find(row => row[0] === label);
+        const optionalRow = quotation.rows.find(row => String(row[0]).startsWith(label));
         assert.ok(optionalRow, `${label} is shown because Plan 1 selected it`);
         assert.ok(optionalRow[1] > 0);
         assert.equal(optionalRow[2], "", `${label} is blank for Plan 2, where it was not selected`);

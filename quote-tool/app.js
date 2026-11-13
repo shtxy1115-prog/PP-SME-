@@ -572,14 +572,7 @@
   }
 
   function prepareDisplaySheet(sheet) {
-    if (!String(sheet?.name || "").includes("TOB")) return sheet;
-    return {
-      ...sheet,
-      rows: (sheet.rows || []).map((row, rowIndex) => row.map((value, columnIndex) => {
-        if (typeof value !== "string" || !value) return value;
-        return wrapDisplayText(value, mergedColumnWidth(sheet, rowIndex, columnIndex));
-      })),
-    };
+    return sheet;
   }
 
   function rowHeight(row, sheet, rowIndex) {
@@ -588,6 +581,22 @@
     const lines = row.reduce((max, value, columnIndex) => {
       const width = mergedColumnWidth(sheet, rowIndex, columnIndex);
       const lineCount = String(value ?? "").split("\n").reduce((count, line) => {
+        if (isTob && typeof document !== "undefined" && document.createElement) {
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext && canvas.getContext("2d");
+          if (context) {
+            context.font = "11pt OPPOSans R, sans-serif";
+            const available = Math.max(30, width * 7 - 18) * 0.88;
+            let used = 0, measuredLines = 1;
+            for (const token of line.match(/[^\u0000-\u00ff]|[a-zA-Z0-9]+|./g) || []) {
+              const pixels = context.measureText(token).width;
+              if (pixels > available) { measuredLines += Math.floor(pixels / available); used = pixels % available; }
+              else if (used + pixels > available) { measuredLines += 1; used = pixels; }
+              else used += pixels;
+            }
+            return count + measuredLines;
+          }
+        }
         const displayWidth = Array.from(line).reduce((sum, character) => sum + (/[^\u0000-\u00ff]/.test(character) ? 1 : 0.55), 0);
         return count + Math.max(1, Math.ceil(displayWidth / Math.max(10, width * widthFactor)));
       }, 0);

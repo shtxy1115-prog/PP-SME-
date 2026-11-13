@@ -157,7 +157,7 @@ test("TOB 福利描述使用可读 OPPOSans 字体并为长文本预留自动换
   assert.ok(rowHeight([longText, ""], sheet, 0) >= 130, "长福利描述的 TOB 行高不足以容纳自动换行后的中英文内容");
 });
 
-test("TOB 合并单元格为长中英文描述插入显式换行，避免 Excel 截断", () => {
+test("TOB 保留原文分段，以自动换行及行高容纳长文本", () => {
   const helperStart = app.indexOf("function mergedColumnWidth");
   const helperEnd = app.indexOf("const WORKBOOK_COLORS", helperStart);
   const helpers = new Function(`
@@ -191,8 +191,8 @@ test("TOB 合并单元格为长中英文描述插入显式换行，避免 Excel 
   const displayedPolicy = displaySheet.rows[0][0];
   const displayedOutOfPocket = displaySheet.rows[1][0];
 
-  assert.ok(displayedPolicy.split(nl).length > policyText.split(nl).length, "自付比例英文描述没有被显式分行");
-  assert.ok(displayedOutOfPocket.split(nl).length > outOfPocketText.split(nl).length, "自付限额英文描述没有被显式分行");
+  assert.equal(displayedPolicy, policyText, "不得插入人为换行");
+  assert.equal(displayedOutOfPocket, outOfPocketText, "不得插入人为换行");
   assert.equal(displayedPolicy.replaceAll(nl, ""), policyText.replaceAll(nl, ""), "自付比例描述被换行逻辑改写或丢字");
   assert.equal(displayedOutOfPocket.replaceAll(nl, ""), outOfPocketText.replaceAll(nl, ""), "自付限额描述被换行逻辑改写或丢字");
   assert.ok(helpers.rowHeight(displaySheet.rows[0], displaySheet, 0) >= 130, "自付比例显示行高不足");
